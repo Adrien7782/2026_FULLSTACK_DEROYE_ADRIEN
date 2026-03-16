@@ -30,8 +30,9 @@ Regle:
 ## Etat actuel du workspace
 
 - Le workspace peut contenir seulement de la documentation au depart.
-- Aucun dossier `./front` n'etait present au moment de la redaction de ce fichier.
-- Si un dossier `front/` apparait plus tard, il doit etre inspecte avant tout travail UI pour respecter le design existant.
+- Le repository contient maintenant `front/`, `back/` et `documentation/`.
+- Le frontend possede deja un shell React Router avec theme et layout principal.
+- Le backend expose deja `/health`, `/docs` et une arborescence de modules initiale.
 
 ## Regles de cadrage
 
@@ -59,7 +60,7 @@ Toujours avancer dans cet ordre:
 - Organiser le backend par modules metier: `auth`, `users`, `media`, `suggestions`, `admin`, `notifications`, `reports`.
 - Utiliser Prisma pour la persistence.
 - Utiliser Zod pour la validation des DTO.
-- Documenter chaque route publique dans Swagger.
+- Documenter chaque route publique dans l'OpenAPI skeleton accessible via `/docs`.
 - Proteger les routes privees avec des middlewares d'authentification et d'autorisation.
 - Verifier strictement les permissions admin sur les actions sensibles.
 - Pour le streaming, supporter HTTP Range.
@@ -92,7 +93,7 @@ Toujours avancer dans cet ordre:
 
 - Code source
 - Migrations Prisma
-- Swagger a jour
+- OpenAPI / docs API a jour
 - `.env.example` a jour
 - Documentation technique si une decision structurante est prise
 - Tests minimum sur les flux critiques
@@ -106,5 +107,4 @@ Une fonctionnalite n'est pas consideree terminee si:
 - la validation des entrees est absente
 - la documentation d'API n'est pas mise a jour
 - les variables d'environnement necessaires ne sont pas documentees
-
 

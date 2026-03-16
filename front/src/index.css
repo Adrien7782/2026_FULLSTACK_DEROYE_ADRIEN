@@ -1,0 +1,61 @@
+:root {
+  font-family:
+    "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bg: #f3eee4;
+  --panel: rgba(255, 252, 247, 0.86);
+  --panel-alt: #f9f3ea;
+  --text: #1f1714;
+  --muted: #6f645b;
+  --border: #ddcfbf;
+  --accent: #a45138;
+  --accent-soft: rgba(164, 81, 56, 0.28);
+  --shadow-soft: 0 18px 48px rgba(42, 30, 23, 0.08);
+  color: var(--text);
+  background: var(--bg);
+}
+
+html[data-theme="dark"] {
+  --bg: #181514;
+  --panel: rgba(33, 28, 27, 0.92);
+  --panel-alt: #231e1d;
+  --text: #f5ede5;
+  --muted: #c7b9af;
+  --border: #3a312d;
+  --accent: #e3a278;
+  --accent-soft: rgba(227, 162, 120, 0.32);
+  --shadow-soft: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(212, 159, 120, 0.18), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(157, 125, 95, 0.14), transparent 28%),
+    var(--bg);
+  color: var(--text);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
