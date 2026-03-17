@@ -35,6 +35,7 @@ Regle:
 - Le backend expose `/health`, `/docs`, une phase 1 fonctionnelle pour `auth` et `users`, et une phase 2 fonctionnelle pour `media`.
 - La phase 1 est deja branchee de bout en bout: inscription, connexion, session cookie, `GET /me`, `PATCH /me`, `logout`, `logout-all`.
 - La phase 2 est deja branchee de bout en bout: `Media + Genre`, home catalogue, listing films, filtre par genre, pagination par curseur, fiche detail media.
+- Les affiches catalogue sont maintenant stockees localement dans `back/data/posters` et servies via `GET /api/media/:slug/poster`.
 
 ## Regles de cadrage
 
@@ -78,6 +79,8 @@ Toujours avancer dans cet ordre:
 ## Conventions donnees
 
 - Les chemins fichiers en base doivent etre relatifs a `DATA_DIRECTORY`.
+- Les fichiers reels lives dans `back/data` en local et dans `/app/data` en Docker par defaut.
+- Pour la video, privilegier `GET /api/media/:slug/stream` avec support HTTP Range plutot qu'une exposition directe du filesystem.
 - Toute nouvelle variable d'environnement doit etre documentee.
 - Les migrations Prisma doivent rester coherentes avec le cahier des charges et le plan.
 - Eviter les modeles trop abstraits si le besoin produit n'est pas encore stabilise.

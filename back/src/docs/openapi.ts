@@ -2,8 +2,8 @@ export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "StreamAdy API",
-    version: "0.3.0",
-    description: "Phase 2 API document for authentication, users and media catalog.",
+    version: "0.3.1",
+    description: "Phase 2 API document for authentication, users, media catalog and local assets.",
   },
   servers: [
     {
@@ -178,6 +178,37 @@ export const openApiDocument = {
           },
           "404": {
             description: "Media not found",
+          },
+        },
+      },
+    },
+    "/api/media/{slug}/poster": {
+      get: {
+        tags: ["Media"],
+        summary: "Return the local poster asset for a published media",
+        responses: {
+          "200": {
+            description: "Poster asset returned",
+          },
+          "404": {
+            description: "Poster or media not found",
+          },
+        },
+      },
+    },
+    "/api/media/{slug}/stream": {
+      get: {
+        tags: ["Media"],
+        summary: "Stream a published local video file with HTTP Range support",
+        responses: {
+          "200": {
+            description: "Full video file returned",
+          },
+          "206": {
+            description: "Partial video chunk returned",
+          },
+          "404": {
+            description: "Video or media not found",
           },
         },
       },

@@ -33,6 +33,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY prisma.config.ts ./
+COPY data ./data
 
 EXPOSE 3000
 

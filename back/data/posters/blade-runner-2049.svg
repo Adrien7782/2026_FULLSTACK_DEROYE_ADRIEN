@@ -1,0 +1,23 @@
+<svg width="900" height="1350" viewBox="0 0 900 1350" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="1350" fill="#150C09"/>
+  <rect width="900" height="1350" fill="url(#haze)"/>
+  <rect x="0" y="0" width="404" height="1350" fill="#2A91B3" fill-opacity="0.16"/>
+  <path d="M0 970L164 842L248 886L366 798L448 854L560 774L650 830L744 752L900 886V1350H0V970Z" fill="#13161D" fill-opacity="0.92"/>
+  <path d="M438 312L508 312" stroke="#FFD386" stroke-width="10" stroke-linecap="round"/>
+  <path d="M420 394L528 394" stroke="#FFD386" stroke-width="10" stroke-linecap="round"/>
+  <path d="M392 476L554 476" stroke="#FFD386" stroke-width="10" stroke-linecap="round"/>
+  <path d="M368 560L580 560" stroke="#FFD386" stroke-width="10" stroke-linecap="round"/>
+  <path d="M80 220L338 220" stroke="#83E3F8" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+  <path d="M118 280L312 280" stroke="#83E3F8" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  <path d="M144 340L284 340" stroke="#83E3F8" stroke-width="6" stroke-linecap="round" opacity="0.32"/>
+  <text x="86" y="1086" fill="#F7E2C8" font-size="88" font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="8">BLADE RUNNER</text>
+  <text x="88" y="1188" fill="#F2A247" font-size="162" font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="12">2049</text>
+  <text x="92" y="1262" fill="#A9E4F0" font-size="28" font-family="Arial, Helvetica, sans-serif" letter-spacing="6">A SECRET IN THE DUST CHANGES EVERYTHING.</text>
+  <defs>
+    <linearGradient id="haze" x1="126" y1="74" x2="760" y2="1228" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F49E3E"/>
+      <stop offset="0.38" stop-color="#C6612F"/>
+      <stop offset="1" stop-color="#0C1016"/>
+    </linearGradient>
+  </defs>
+</svg>

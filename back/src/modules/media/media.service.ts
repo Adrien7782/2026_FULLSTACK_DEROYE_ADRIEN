@@ -22,8 +22,9 @@ const mediaCardSelect = {
   type: true,
   releaseYear: true,
   durationMinutes: true,
-  posterUrl: true,
-  backdropUrl: true,
+  videoPath: true,
+  posterPath: true,
+  backdropPath: true,
   createdAt: true,
   genres: {
     select: genreSelect,
@@ -52,8 +53,9 @@ const mapMediaCard = (media: MediaCardRecord) => ({
   type: media.type,
   releaseYear: media.releaseYear,
   durationMinutes: media.durationMinutes,
-  posterUrl: media.posterUrl,
-  backdropUrl: media.backdropUrl,
+  hasVideo: Boolean(media.videoPath),
+  hasPoster: Boolean(media.posterPath),
+  hasBackdrop: Boolean(media.backdropPath),
   createdAt: media.createdAt,
   genres: media.genres,
 });

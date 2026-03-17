@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useSession } from "../auth/useSession";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { getApiOrigin } from "../lib/api";
+import { getDocsUrl } from "../lib/api";
 
 export function AppLayout() {
   const { user, isAuthenticated, isBusy, logout } = useSession();
@@ -33,7 +33,7 @@ export function AppLayout() {
               <NavLink to="/register">Inscription</NavLink>
             </>
           )}
-          <a href={`${getApiOrigin()}/docs`} target="_blank" rel="noreferrer">
+          <a href={getDocsUrl()} target="_blank" rel="noreferrer">
             Docs API
           </a>
         </nav>

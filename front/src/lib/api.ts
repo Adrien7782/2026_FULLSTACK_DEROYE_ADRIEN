@@ -1,5 +1,7 @@
-const API_ORIGIN = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-const API_BASE_URL = `${API_ORIGIN}/api`;
+const API_ORIGIN = (import.meta.env.VITE_API_URL ?? "").trim();
+const API_BASE_URL = API_ORIGIN ? `${API_ORIGIN}/api` : "/api";
+const HEALTH_URL = API_ORIGIN ? `${API_ORIGIN}/health` : "/health";
+const DOCS_URL = API_ORIGIN ? `${API_ORIGIN}/docs` : "/docs";
 
 export type UserRole = "standard" | "admin";
 export type MediaType = "film" | "series";
@@ -50,8 +52,9 @@ export type MediaCardItem = {
   type: MediaType;
   releaseYear: number | null;
   durationMinutes: number | null;
-  posterUrl: string | null;
-  backdropUrl: string | null;
+  hasVideo: boolean;
+  hasPoster: boolean;
+  hasBackdrop: boolean;
   createdAt: string;
   genres: MediaGenre[];
 };
@@ -160,6 +163,14 @@ export const getApiOrigin = () => API_ORIGIN;
 
 export const getApiBaseUrl = () => API_BASE_URL;
 
+export const getDocsUrl = () => DOCS_URL;
+
+export const getMediaPosterUrl = (slug: string) =>
+  `${API_BASE_URL}/media/${encodeURIComponent(slug)}/poster`;
+
+export const getMediaStreamUrl = (slug: string) =>
+  `${API_BASE_URL}/media/${encodeURIComponent(slug)}/stream`;
+
 const request = async <T>(path: string, init?: RequestInit) => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
@@ -200,7 +211,7 @@ const buildSearchParams = (params: Record<string, string | number | null | undef
 };
 
 export const getHealth = async () => {
-  const response = await fetch(`${API_ORIGIN}/health`, {
+  const response = await fetch(HEALTH_URL, {
     method: "GET",
     credentials: "include",
   });

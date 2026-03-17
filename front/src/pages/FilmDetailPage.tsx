@@ -1,7 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
-import { getMediaDetail, type MediaDetailResponse } from "../lib/api";
+import {
+  getMediaDetail,
+  getMediaPosterUrl,
+  getMediaStreamUrl,
+  type MediaDetailResponse,
+} from "../lib/api";
+
+const getFallbackLabel = (title: string) =>
+  title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
 
 export function FilmDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -28,9 +41,9 @@ export function FilmDetailPage() {
         if (isMounted) {
           setDetail(payload);
         }
-      } catch (error) {
+      } catch (loadError) {
         if (isMounted) {
-          setError(error instanceof Error ? error.message : "Failed to load media detail");
+          setError(loadError instanceof Error ? loadError.message : "Failed to load media detail");
         }
       } finally {
         if (isMounted) {
@@ -74,6 +87,8 @@ export function FilmDetailPage() {
   }
 
   const { item, related } = detail;
+  const streamUrl = getMediaStreamUrl(item.slug);
+  const posterUrl = getMediaPosterUrl(item.slug);
 
   return (
     <section className="page-section">
@@ -101,7 +116,11 @@ export function FilmDetailPage() {
             <div className="status-card">
               <span className="status-label">Duree</span>
               <strong>{item.durationMinutes ? `${item.durationMinutes} min` : "Inconnue"}</strong>
-              <p>La lecture arrivera en phase 3.</p>
+              <p>
+                {item.hasVideo
+                  ? "Le fichier local est pret a etre diffuse via l'API."
+                  : "Ajoute un fichier video local pour activer la lecture."}
+              </p>
             </div>
 
             <div className="status-card">
@@ -115,18 +134,24 @@ export function FilmDetailPage() {
             <Link className="primary-link" to="/films">
               Retour au catalogue
             </Link>
-            <button type="button" className="secondary-button" disabled>
-              Lecture en phase 3
-            </button>
+            {item.hasVideo ? (
+              <a className="secondary-link" href={streamUrl} target="_blank" rel="noreferrer">
+                Ouvrir le flux video
+              </a>
+            ) : (
+              <button type="button" className="secondary-button" disabled>
+                Video locale absente
+              </button>
+            )}
           </div>
         </div>
 
         <div className="detail-poster">
-          {item.posterUrl ? (
-            <img src={item.posterUrl} alt={`Affiche de ${item.title}`} />
+          {item.hasPoster ? (
+            <img src={posterUrl} alt={`Affiche de ${item.title}`} />
           ) : (
             <div className="media-card-fallback is-large" aria-hidden="true">
-              <span>{item.title.slice(0, 2).toUpperCase()}</span>
+              <span>{getFallbackLabel(item.title)}</span>
             </div>
           )}
         </div>

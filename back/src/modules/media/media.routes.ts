@@ -5,6 +5,7 @@ import {
   listCatalogGenres,
   listCatalogMedia,
 } from "./media.service.js";
+import { sendPosterAsset, sendVideoStream } from "./media.storage.js";
 import {
   mediaGenresQuerySchema,
   mediaListQuerySchema,
@@ -31,6 +32,16 @@ mediaRouter.get("/genres", async (req, res) => {
   const payload = await listCatalogGenres(query);
 
   res.status(200).json(payload);
+});
+
+mediaRouter.get("/:slug/poster", async (req, res) => {
+  const params = mediaSlugParamsSchema.parse(req.params);
+  await sendPosterAsset(params.slug, res);
+});
+
+mediaRouter.get("/:slug/stream", async (req, res) => {
+  const params = mediaSlugParamsSchema.parse(req.params);
+  await sendVideoStream(params.slug, req, res);
 });
 
 mediaRouter.get("/:slug", async (req, res) => {

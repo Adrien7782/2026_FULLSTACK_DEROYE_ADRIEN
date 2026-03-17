@@ -103,8 +103,9 @@ async function seed() {
         status: "published",
         releaseYear: film.releaseYear,
         durationMinutes: film.durationMinutes,
-        posterUrl: null,
-        backdropUrl: null,
+        videoPath: null,
+        posterPath: `posters/${film.slug}.svg`,
+        backdropPath: null,
         genres: {
           set: [],
           connect: film.genres.map((slug) => ({ slug })),
@@ -118,8 +119,9 @@ async function seed() {
         status: "published",
         releaseYear: film.releaseYear,
         durationMinutes: film.durationMinutes,
-        posterUrl: null,
-        backdropUrl: null,
+        videoPath: null,
+        posterPath: `posters/${film.slug}.svg`,
+        backdropPath: null,
         genres: {
           connect: film.genres.map((slug) => ({ slug })),
         },

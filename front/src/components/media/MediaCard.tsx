@@ -1,12 +1,20 @@
 import { Link } from "react-router-dom";
-import type { MediaCardItem } from "../../lib/api";
+import { getMediaPosterUrl, type MediaCardItem } from "../../lib/api";
 
 type MediaCardProps = {
   media: MediaCardItem;
 };
 
 const truncate = (value: string, maxLength: number) =>
-  value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+  value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+
+const getFallbackLabel = (title: string) =>
+  title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
 
 export function MediaCard({ media }: MediaCardProps) {
   const year = media.releaseYear ? String(media.releaseYear) : "Annee inconnue";
@@ -16,11 +24,15 @@ export function MediaCard({ media }: MediaCardProps) {
     <article className="media-card">
       <Link className="media-card-link" to={`/films/${media.slug}`}>
         <div className="media-card-visual">
-          {media.posterUrl ? (
-            <img src={media.posterUrl} alt={`Affiche de ${media.title}`} />
+          {media.hasPoster ? (
+            <img
+              src={getMediaPosterUrl(media.slug)}
+              alt={`Affiche de ${media.title}`}
+              loading="lazy"
+            />
           ) : (
             <div className="media-card-fallback" aria-hidden="true">
-              <span>{media.title.slice(0, 2).toUpperCase()}</span>
+              <span>{getFallbackLabel(media.title)}</span>
             </div>
           )}
         </div>
@@ -29,7 +41,7 @@ export function MediaCard({ media }: MediaCardProps) {
           <div className="media-card-header">
             <h3>{media.title}</h3>
             <p className="muted">
-              {year} · {duration}
+              {year} / {duration}
             </p>
           </div>
 

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { resolve } from "node:path";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -6,6 +7,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATA_DIRECTORY: z.string().min(1).default("./data"),
   SESSION_COOKIE_NAME: z.string().min(1).default("streamady_session"),
   SESSION_COOKIE_SECURE: z.enum(["true", "false"]).default("false"),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),
@@ -26,5 +28,6 @@ if (!parsedEnv.success) {
 
 export const env = {
   ...parsedEnv.data,
+  DATA_DIRECTORY: resolve(process.cwd(), parsedEnv.data.DATA_DIRECTORY),
   SESSION_COOKIE_SECURE: parsedEnv.data.SESSION_COOKIE_SECURE === "true",
 };

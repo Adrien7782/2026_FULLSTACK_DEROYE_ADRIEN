@@ -15,6 +15,7 @@ Le projet couvre maintenant la phase 0, la phase 1 et la phase 2:
 - profil utilisateur (`GET /api/users/me`, `PATCH /api/users/me`)
 - `logout` et `logout-all`
 - catalogue `Media + Genre`
+- stockage local des assets media via `DATA_DIRECTORY`
 - accueil catalogue, page `Films`, recherche, filtre par genre
 - pagination par curseur et fiche detail film
 
@@ -41,11 +42,37 @@ Des fichiers d'exemple sont fournis:
 - Routes phase 1 disponibles sous `http://localhost:3000/api/auth` et `http://localhost:3000/api/users`
 - Routes phase 2 disponibles sous `http://localhost:3000/api/media`
 
+### Lecture video locale et chemins fichiers
+
+Le frontend ne doit jamais lire directement un chemin Windows du type `C:\\Videos\\film.mp4`.
+
+Le fonctionnement retenu est le suivant:
+
+- la base stocke des chemins relatifs, par exemple `videos/interstellar.mp4` ou `posters/interstellar.svg`
+- ces chemins sont resolus par le backend a partir de `DATA_DIRECTORY`
+- le navigateur consomme ensuite des routes HTTP protegees:
+  - `GET /api/media/:slug/poster`
+  - `GET /api/media/:slug/stream`
+- la route video supporte `HTTP Range`, ce qui permet la lecture partielle d'un fichier local
+
+En local:
+
+- `DATA_DIRECTORY=./data`
+- le backend lit donc les fichiers dans `back/data`
+
+En Docker:
+
+- `DATA_DIRECTORY=/app/data`
+- `docker-compose.yml` monte `./2026_FULLSTACK_DEROYE_ADRIEN/back/data` dans le conteneur backend
+
+Si tu veux lire des videos stockees ailleurs sur ton PC plus tard, il faudra changer uniquement le chemin monte dans `docker-compose.yml`, tout en gardant des chemins relatifs en base.
+
 ### Frontend
 
 - `cd front`
 - `npm run dev`
 - Front disponible sur `http://localhost:5173`
+- En developpement, Vite proxy automatiquement `/api`, `/health` et `/docs` vers `http://localhost:3000`
 
 ## Lancement dockerise
 
@@ -57,6 +84,7 @@ Des fichiers d'exemple sont fournis:
 ### Frontend
 
 - `docker compose up -d --build frontend`
+- Nginx proxy automatiquement `/api`, `/health` et `/docs` vers le conteneur `backend`
 
 ### Stack complete
 
@@ -72,6 +100,11 @@ Des fichiers d'exemple sont fournis:
 ### Peupler le catalogue de demo
 
 - `npm run prisma:seed`
+
+### Structure media locale
+
+- `back/data/posters` contient les affiches locales servies par l'API
+- `back/data/videos` est le dossier cible pour les futurs fichiers video
 
 ### Visualiser les tables de la DB
 
@@ -112,6 +145,7 @@ Des fichiers d'exemple sont fournis:
 - verifier `GET http://localhost:3000/api/media/home`
 - verifier `GET http://localhost:3000/api/media?type=film&limit=12`
 - verifier `GET http://localhost:3000/api/media/<slug>`
+- verifier `GET http://localhost:3000/api/media/<slug>/poster`
 
 ## Bonnes pratiques Git
 
@@ -169,6 +203,6 @@ Les tags servent a retrouver facilement un jalon, comparer deux etats du projet 
 
 - en local, Prisma utilise `localhost:5433` depuis `back/.env`
 - dans Docker, le backend utilise `db:5432` via `docker-compose.yml`
-- le frontend dockerise continue d'appeler `http://localhost:3000`
-- il ne faut pas mettre `http://backend:3000` dans le frontend, car le code s'execute dans le navigateur
+- le frontend utilise maintenant des URLs relatives et proxy l'API en same-origin
+- ce proxy evite les problemes de session sur les affiches et preparera mieux la lecture video HTML
 - `SESSION_COOKIE_SECURE=false` doit rester en local tant que la stack tourne en HTTP
