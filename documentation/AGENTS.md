@@ -31,9 +31,10 @@ Regle:
 
 - Le workspace peut contenir seulement de la documentation au depart.
 - Le repository contient maintenant `front/`, `back/` et `documentation/`.
-- Le frontend possede un shell React Router avec theme, layout principal, store de session et guards.
-- Le backend expose `/health`, `/docs` et une phase 1 fonctionnelle pour `auth` et `users`.
+- Le frontend possede un shell React Router avec theme, layout principal, store de session, guards et pages catalogue.
+- Le backend expose `/health`, `/docs`, une phase 1 fonctionnelle pour `auth` et `users`, et une phase 2 fonctionnelle pour `media`.
 - La phase 1 est deja branchee de bout en bout: inscription, connexion, session cookie, `GET /me`, `PATCH /me`, `logout`, `logout-all`.
+- La phase 2 est deja branchee de bout en bout: `Media + Genre`, home catalogue, listing films, filtre par genre, pagination par curseur, fiche detail media.
 
 ## Regles de cadrage
 

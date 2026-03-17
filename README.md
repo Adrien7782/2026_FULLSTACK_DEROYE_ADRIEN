@@ -2,7 +2,7 @@
 
 ## Etat actuel
 
-Le projet couvre maintenant la phase 0 et la phase 1:
+Le projet couvre maintenant la phase 0, la phase 1 et la phase 2:
 
 - PostgreSQL dans Docker
 - Prisma et migrations
@@ -14,6 +14,9 @@ Le projet couvre maintenant la phase 0 et la phase 1:
 - sessions persistantes en base avec cookie HTTP-only
 - profil utilisateur (`GET /api/users/me`, `PATCH /api/users/me`)
 - `logout` et `logout-all`
+- catalogue `Media + Genre`
+- accueil catalogue, page `Films`, recherche, filtre par genre
+- pagination par curseur et fiche detail film
 
 ## Variables d'environnement
 
@@ -36,6 +39,7 @@ Des fichiers d'exemple sont fournis:
 - API disponible sur `http://localhost:3000`
 - Docs OpenAPI disponibles sur `http://localhost:3000/docs`
 - Routes phase 1 disponibles sous `http://localhost:3000/api/auth` et `http://localhost:3000/api/users`
+- Routes phase 2 disponibles sous `http://localhost:3000/api/media`
 
 ### Frontend
 
@@ -62,8 +66,12 @@ Des fichiers d'exemple sont fournis:
 
 ### Lancer une migration
 
-- `npx prisma migrate dev --name phase1_auth`
+- `npx prisma migrate dev --name phase2_catalog`
 - `npx prisma generate`
+
+### Peupler le catalogue de demo
+
+- `npm run prisma:seed`
 
 ### Visualiser les tables de la DB
 
@@ -93,6 +101,17 @@ Des fichiers d'exemple sont fournis:
 - verifier le profil sur `http://localhost:5173/profile`
 - verifier `GET http://localhost:3000/api/users/me` avec le cookie de session
 - verifier `POST http://localhost:3000/api/auth/logout`
+
+## Verification phase 2
+
+- lancer `npm run prisma:seed` dans `back/` pour charger le catalogue de demo
+- verifier l'accueil sur `http://localhost:5173/`
+- verifier la page films sur `http://localhost:5173/films`
+- tester la recherche par titre et le filtre par genre
+- ouvrir une fiche film sur `http://localhost:5173/films/<slug>`
+- verifier `GET http://localhost:3000/api/media/home`
+- verifier `GET http://localhost:3000/api/media?type=film&limit=12`
+- verifier `GET http://localhost:3000/api/media/<slug>`
 
 ## Bonnes pratiques Git
 

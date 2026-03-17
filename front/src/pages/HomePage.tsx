@@ -1,120 +1,189 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../auth/useSession";
-import { getApiOrigin, getHealth, type HealthResponse } from "../lib/api";
+import { Link } from "react-router-dom";
+import { MediaCard } from "../components/media/MediaCard";
+import { getCatalogHome, type CatalogHomeResponse } from "../lib/api";
 
 export function HomePage() {
-  const { user, session, refresh, isBusy } = useSession();
-  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [catalog, setCatalog] = useState<CatalogHomeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadHealth = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const nextHealth = await getHealth();
-      setHealth(nextHealth);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown API error";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void loadHealth();
+    let isMounted = true;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const catalogPayload = await getCatalogHome();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCatalog(catalogPayload);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(error instanceof Error ? error.message : "Failed to load the catalog");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  if (isLoading) {
+    return (
+      <section className="page-section">
+        <div className="panel">
+          <p className="eyebrow">Accueil</p>
+          <h2>Chargement du catalogue</h2>
+          <p className="muted">Le front recupere les ajouts recents et les genres disponibles.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="page-section">
+        <div className="panel">
+          <p className="eyebrow">Accueil</p>
+          <h2>Le catalogue n&apos;a pas pu etre charge</h2>
+          <p className="form-error">{error}</p>
+          <Link className="secondary-link" to="/films">
+            Ouvrir la page films
+          </Link>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="page-section">
       <div className="hero-card panel">
-        <div>
-          <p className="eyebrow">Phase 1</p>
-          <h2>Bienvenue {user?.firstName ?? user?.username}</h2>
-          <p className="muted">
-            Le shell est maintenant prive. La session est active et le front peut
-            consommer les routes protegees du backend.
-          </p>
-        </div>
-
-        <div className="status-grid">
-          <article className="status-card">
-            <span className="status-label">Utilisateur</span>
-            <strong>{user?.role}</strong>
-            <p>{user?.email}</p>
-          </article>
-
-          <article className="status-card">
-            <span className="status-label">Session</span>
-            <strong>{session ? "Open" : "Unknown"}</strong>
-            <p>Expire le {session ? new Date(session.expiresAt).toLocaleString() : "-"}</p>
-          </article>
-
-          <article className="status-card">
-            <span className="status-label">Database</span>
-            <strong>
-              {isLoading ? "Checking" : health?.database === "up" ? "Connected" : "Unknown"}
-            </strong>
-            <p>
-              {isLoading
-                ? "Verification en cours."
-                : error
-                  ? error
-                  : `Derniere verification: ${new Date(health?.timestamp ?? "").toLocaleString()}`}
+        <div className="home-hero">
+          <div className="home-hero-copy">
+            <p className="eyebrow">Accueil</p>
+            <h2>Bienvenue sur StreamAdy</h2>
+            <p className="muted">
+              Parcours rapidement les derniers films ajoutes, explore par genre et
+              accede au catalogue complet sans passer par des ecrans techniques.
             </p>
-          </article>
-        </div>
+          </div>
 
-        <div className="action-row">
-          <button type="button" className="primary-button" onClick={() => void loadHealth()}>
-            Relancer le check API
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => void refresh()}
-            disabled={isBusy}
-          >
-            Tourner la session
-          </button>
-          <a className="secondary-link" href={`${getApiOrigin()}/docs`} target="_blank" rel="noreferrer">
-            Ouvrir la doc API
-          </a>
+          <div className="home-highlight-grid">
+            <article className="highlight-card">
+              <span className="status-label">Catalogue</span>
+              <strong>{(catalog?.recent.length ?? 0) + (catalog?.spotlight ? 1 : 0)} films visibles</strong>
+              <p>Les films publies sont directement consultables depuis la page Films.</p>
+            </article>
+
+            <article className="highlight-card">
+              <span className="status-label">Genres</span>
+              <strong>{catalog?.genres.length ?? 0} categories</strong>
+              <p>Utilise les genres pour filtrer rapidement le catalogue.</p>
+            </article>
+
+            <article className="highlight-card">
+              <span className="status-label">A l'affiche</span>
+              <strong>{catalog?.spotlight?.title ?? "Aucun spotlight"}</strong>
+              <p>
+                {catalog?.spotlight
+                  ? "Le film mis en avant apparait ci-dessous, sans prendre toute la home."
+                  : "Le bloc spotlight s'activera automatiquement des qu'un film sera disponible."}
+              </p>
+            </article>
+          </div>
         </div>
       </div>
 
-      <div className="info-grid">
-        <article className="panel">
-          <p className="eyebrow">Sprint 1.1</p>
-          <h3>Authentification</h3>
-          <ul className="bullet-list">
-            <li>Inscription et connexion `username/password`</li>
-            <li>Cookie de session HTTP-only</li>
-            <li>Sessions persistantes par appareil</li>
-          </ul>
-        </article>
+      {catalog?.spotlight && (
+        <div className="panel spotlight-panel">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Mis en avant</p>
+              <h3>{catalog.spotlight.title}</h3>
+              <p className="muted">{catalog.spotlight.synopsis}</p>
+            </div>
 
-        <article className="panel">
-          <p className="eyebrow">Sprint 1.2</p>
-          <h3>Securisation</h3>
-          <ul className="bullet-list">
-            <li>`GET /me`, `PATCH /me`, `logout`, `logout-all`</li>
-            <li>Routes protegees et guard frontend</li>
-            <li>Rate limiting et logging backend</li>
-          </ul>
-        </article>
+            <div className="action-row">
+              <Link className="primary-link" to={`/films/${catalog.spotlight.slug}`}>
+                Voir la fiche
+              </Link>
+              <Link className="secondary-link" to="/films">
+                Voir tout le catalogue
+              </Link>
+            </div>
+          </div>
 
-        <article className="panel">
-          <p className="eyebrow">API</p>
-          <h3>Etat runtime</h3>
-          <ul className="bullet-list">
-            <li>Origine API: {getApiOrigin()}</li>
-            <li>Base: {error ? "indisponible" : "operationnelle"}</li>
-            <li>Docs: `/docs` accessibles</li>
-          </ul>
-        </article>
+          <div className="chip-row">
+            {catalog.spotlight.genres.map((genre) => (
+              <Link key={genre.id} to={`/films?genre=${genre.slug}`} className="genre-chip is-link">
+                {genre.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Ajouts recents</p>
+            <h3>Les derniers films du catalogue</h3>
+          </div>
+          <Link className="secondary-link" to="/films">
+            Tout voir
+          </Link>
+        </div>
+
+        {catalog && catalog.recent.length > 0 ? (
+          <div className="media-grid">
+            {catalog.recent.map((media) => (
+              <MediaCard key={media.id} media={media} />
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p className="muted">Aucun film publie pour l'instant.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Genres</p>
+            <h3>Commencer par une categorie</h3>
+          </div>
+        </div>
+
+        {catalog && catalog.genres.length > 0 ? (
+          <div className="genre-grid">
+            {catalog.genres.map((genre) => (
+              <Link key={genre.id} to={`/films?genre=${genre.slug}`} className="genre-tile">
+                <strong>{genre.name}</strong>
+                <span>{genre.mediaCount} film(s)</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p className="muted">Les genres apparaitront ici des que le catalogue contiendra des films.</p>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ const API_ORIGIN = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const API_BASE_URL = `${API_ORIGIN}/api`;
 
 export type UserRole = "standard" | "admin";
+export type MediaType = "film" | "series";
 
 export type HealthResponse = {
   ok: boolean;
@@ -32,6 +33,65 @@ export type SessionInfo = {
   lastUsedAt: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type MediaGenre = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type MediaCardItem = {
+  id: string;
+  catalogIndex: number;
+  slug: string;
+  title: string;
+  synopsis: string;
+  type: MediaType;
+  releaseYear: number | null;
+  durationMinutes: number | null;
+  posterUrl: string | null;
+  backdropUrl: string | null;
+  createdAt: string;
+  genres: MediaGenre[];
+};
+
+export type CatalogGenre = {
+  id: string;
+  name: string;
+  slug: string;
+  mediaCount: number;
+};
+
+export type CatalogListResponse = {
+  items: MediaCardItem[];
+  pageInfo: {
+    hasMore: boolean;
+    nextCursor: number | null;
+    limit: number;
+  };
+  filters: {
+    type: MediaType;
+    search: string | null;
+    genre: string | null;
+  };
+};
+
+export type CatalogHomeResponse = {
+  spotlight: MediaCardItem | null;
+  recent: MediaCardItem[];
+  genres: CatalogGenre[];
+};
+
+export type MediaDetailResponse = {
+  item: MediaCardItem & {
+    updatedAt: string;
+    stats: {
+      genreCount: number;
+      catalogPosition: number;
+    };
+  };
+  related: MediaCardItem[];
 };
 
 export type AuthPayload = {
@@ -69,6 +129,14 @@ export type UpdateProfileInput = {
   lastName?: string | null;
   avatarUrl?: string | null;
   isLikesPrivate?: boolean;
+};
+
+export type ListMediaParams = {
+  type?: MediaType;
+  search?: string;
+  genre?: string;
+  cursor?: number | null;
+  limit?: number;
 };
 
 type ApiErrorBody = {
@@ -116,6 +184,19 @@ const request = async <T>(path: string, init?: RequestInit) => {
   }
 
   return payload as T;
+};
+
+const buildSearchParams = (params: Record<string, string | number | null | undefined>) => {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && `${value}`.length > 0) {
+      searchParams.set(key, String(value));
+    }
+  }
+
+  const serialized = searchParams.toString();
+  return serialized ? `?${serialized}` : "";
 };
 
 export const getHealth = async () => {
@@ -167,4 +248,38 @@ export const updateCurrentUser = (input: UpdateProfileInput) =>
   request<AuthPayload>("/users/me", {
     method: "PATCH",
     body: JSON.stringify(input),
+  });
+
+export const getCatalogHome = () =>
+  request<CatalogHomeResponse>("/media/home", {
+    method: "GET",
+  });
+
+export const listCatalogMedia = (params: ListMediaParams = {}) =>
+  request<CatalogListResponse>(
+    `/media${buildSearchParams({
+      type: params.type ?? "film",
+      search: params.search,
+      genre: params.genre,
+      cursor: params.cursor,
+      limit: params.limit,
+    })}`,
+    {
+      method: "GET",
+    },
+  );
+
+export const listCatalogGenres = (type: MediaType = "film") =>
+  request<{ items: CatalogGenre[] }>(
+    `/media/genres${buildSearchParams({
+      type,
+    })}`,
+    {
+      method: "GET",
+    },
+  );
+
+export const getMediaDetail = (slug: string) =>
+  request<MediaDetailResponse>(`/media/${slug}`, {
+    method: "GET",
   });

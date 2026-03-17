@@ -18,6 +18,17 @@ enum UserRole {
   admin
 }
 
+enum MediaType {
+  film
+  series
+}
+
+enum MediaStatus {
+  draft
+  published
+  archived
+}
+
 model User {
   id             String    @id @default(uuid())
   username       String    @unique
@@ -47,4 +58,32 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Media {
+  id              String      @id @default(uuid())
+  catalogIndex    Int         @unique @default(autoincrement())
+  slug            String      @unique
+  title           String
+  synopsis        String
+  type            MediaType   @default(film)
+  status          MediaStatus @default(published)
+  releaseYear     Int?
+  durationMinutes Int?
+  posterUrl       String?
+  backdropUrl     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  genres          Genre[]
+
+  @@index([type, status, catalogIndex])
+}
+
+model Genre {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  medias    Media[]
 }

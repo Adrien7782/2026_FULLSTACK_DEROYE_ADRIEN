@@ -24,6 +24,7 @@ export function AppLayout() {
               <NavLink to="/" end>
                 Accueil
               </NavLink>
+              <NavLink to="/films">Films</NavLink>
               <NavLink to="/profile">Profil</NavLink>
             </>
           ) : (
@@ -43,7 +44,7 @@ export function AppLayout() {
             <strong>{isAuthenticated ? user?.username : "Visiteur"}</strong>
             <p className="muted">
               {isAuthenticated
-                ? `${user?.role} · ${user?.email}`
+                ? `${user?.role} - ${user?.email}`
                 : "Connecte-toi pour ouvrir les pages protegees."}
             </p>
 

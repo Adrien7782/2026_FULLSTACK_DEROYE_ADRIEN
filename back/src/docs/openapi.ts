@@ -2,8 +2,8 @@ export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "StreamAdy API",
-    version: "0.2.0",
-    description: "Phase 1 API document for authentication and user management.",
+    version: "0.3.0",
+    description: "Phase 2 API document for authentication, users and media catalog.",
   },
   servers: [
     {
@@ -15,7 +15,7 @@ export const openApiDocument = {
     { name: "System", description: "Technical endpoints for platform health and docs." },
     { name: "Auth", description: "Registration, login, session rotation and logout." },
     { name: "Users", description: "Authenticated user profile management." },
-    { name: "Media", description: "Media catalog module placeholder." },
+    { name: "Media", description: "Catalog listing, filters, home feed and media detail." },
     { name: "Suggestions", description: "Suggestion workflow module placeholder." },
     { name: "Admin", description: "Administration module placeholder." },
   ],
@@ -135,10 +135,49 @@ export const openApiDocument = {
     "/api/media": {
       get: {
         tags: ["Media"],
-        summary: "Media module placeholder protected by authentication",
+        summary: "List published catalog media with title search, genre filter and cursor pagination",
         responses: {
           "200": {
-            description: "Media module scaffold is available",
+            description: "Catalog page returned",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+        },
+      },
+    },
+    "/api/media/home": {
+      get: {
+        tags: ["Media"],
+        summary: "Return the home feed with spotlight media, recent additions and genre highlights",
+        responses: {
+          "200": {
+            description: "Home catalog payload returned",
+          },
+        },
+      },
+    },
+    "/api/media/genres": {
+      get: {
+        tags: ["Media"],
+        summary: "List available genres for the requested media type",
+        responses: {
+          "200": {
+            description: "Genre list returned",
+          },
+        },
+      },
+    },
+    "/api/media/{slug}": {
+      get: {
+        tags: ["Media"],
+        summary: "Retrieve a published media detail page by slug",
+        responses: {
+          "200": {
+            description: "Media detail returned",
+          },
+          "404": {
+            description: "Media not found",
           },
         },
       },
