@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { adminRouter } from "../modules/admin/admin.routes.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
+import { requireAdmin, requireAuth } from "../modules/auth/auth.middleware.js";
 import { mediaRouter } from "../modules/media/media.routes.js";
 import { suggestionsRouter } from "../modules/suggestions/suggestions.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
@@ -16,6 +17,6 @@ apiRouter.get("/", (_req, res) => {
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/users", usersRouter);
-apiRouter.use("/media", mediaRouter);
-apiRouter.use("/suggestions", suggestionsRouter);
-apiRouter.use("/admin", adminRouter);
+apiRouter.use("/media", requireAuth, mediaRouter);
+apiRouter.use("/suggestions", requireAuth, suggestionsRouter);
+apiRouter.use("/admin", requireAuth, requireAdmin, adminRouter);

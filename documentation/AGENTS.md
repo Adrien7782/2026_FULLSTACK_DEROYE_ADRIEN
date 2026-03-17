@@ -31,8 +31,9 @@ Regle:
 
 - Le workspace peut contenir seulement de la documentation au depart.
 - Le repository contient maintenant `front/`, `back/` et `documentation/`.
-- Le frontend possede deja un shell React Router avec theme et layout principal.
-- Le backend expose deja `/health`, `/docs` et une arborescence de modules initiale.
+- Le frontend possede un shell React Router avec theme, layout principal, store de session et guards.
+- Le backend expose `/health`, `/docs` et une phase 1 fonctionnelle pour `auth` et `users`.
+- La phase 1 est deja branchee de bout en bout: inscription, connexion, session cookie, `GET /me`, `PATCH /me`, `logout`, `logout-all`.
 
 ## Regles de cadrage
 
@@ -107,4 +108,3 @@ Une fonctionnalite n'est pas consideree terminee si:
 - la validation des entrees est absente
 - la documentation d'API n'est pas mise a jour
 - les variables d'environnement necessaires ne sont pas documentees
-

@@ -1,8 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
+import { PublicOnlyRoute } from "../auth/PublicOnlyRoute";
+import { RequireAuth } from "../auth/RequireAuth";
 import { AppLayout } from "../layouts/AppLayout";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { ProfilePage } from "../pages/ProfilePage";
+import { RegisterPage } from "../pages/RegisterPage";
 
 export const appRouter = createBrowserRouter([
   {
@@ -11,11 +15,35 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />,
+        element: (
+          <RequireAuth>
+            <HomePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <RequireAuth>
+            <ProfilePage />
+          </RequireAuth>
+        ),
       },
       {
         path: "login",
-        element: <LoginPage />,
+        element: (
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        ),
+      },
+      {
+        path: "register",
+        element: (
+          <PublicOnlyRoute>
+            <RegisterPage />
+          </PublicOnlyRoute>
+        ),
       },
       {
         path: "*",

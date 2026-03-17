@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { getApiBaseUrl, getHealth, type HealthResponse } from "../lib/api";
+import { useSession } from "../auth/useSession";
+import { getApiOrigin, getHealth, type HealthResponse } from "../lib/api";
 
 export function HomePage() {
+  const { user, session, refresh, isBusy } = useSession();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,25 +31,25 @@ export function HomePage() {
     <section className="page-section">
       <div className="hero-card panel">
         <div>
-          <p className="eyebrow">Socle technique</p>
-          <h2>Front, back et base de donnees communiquent</h2>
+          <p className="eyebrow">Phase 1</p>
+          <h2>Bienvenue {user?.firstName ?? user?.username}</h2>
           <p className="muted">
-            Cette page valide la connexion au backend, l&apos;acces a PostgreSQL via
-            Prisma et le shell React de l&apos;application.
+            Le shell est maintenant prive. La session est active et le front peut
+            consommer les routes protegees du backend.
           </p>
         </div>
 
         <div className="status-grid">
           <article className="status-card">
-            <span className="status-label">Frontend</span>
-            <strong>Running</strong>
-            <p>React Router, layout principal et theme sont en place.</p>
+            <span className="status-label">Utilisateur</span>
+            <strong>{user?.role}</strong>
+            <p>{user?.email}</p>
           </article>
 
           <article className="status-card">
-            <span className="status-label">Backend</span>
-            <strong>{error ? "Unavailable" : "Running"}</strong>
-            <p>Base API: {getApiBaseUrl()}</p>
+            <span className="status-label">Session</span>
+            <strong>{session ? "Open" : "Unknown"}</strong>
+            <p>Expire le {session ? new Date(session.expiresAt).toLocaleString() : "-"}</p>
           </article>
 
           <article className="status-card">
@@ -69,7 +71,15 @@ export function HomePage() {
           <button type="button" className="primary-button" onClick={() => void loadHealth()}>
             Relancer le check API
           </button>
-          <a className="secondary-link" href={`${getApiBaseUrl()}/docs`} target="_blank" rel="noreferrer">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => void refresh()}
+            disabled={isBusy}
+          >
+            Tourner la session
+          </button>
+          <a className="secondary-link" href={`${getApiOrigin()}/docs`} target="_blank" rel="noreferrer">
             Ouvrir la doc API
           </a>
         </div>
@@ -77,32 +87,32 @@ export function HomePage() {
 
       <div className="info-grid">
         <article className="panel">
-          <p className="eyebrow">Sprint 0.1</p>
-          <h3>Initialisation</h3>
+          <p className="eyebrow">Sprint 1.1</p>
+          <h3>Authentification</h3>
           <ul className="bullet-list">
-            <li>Docker Compose avec `db`, `backend`, `frontend`</li>
-            <li>Variables d&apos;environnement d&apos;exemple</li>
-            <li>README de bootstrap local</li>
+            <li>Inscription et connexion `username/password`</li>
+            <li>Cookie de session HTTP-only</li>
+            <li>Sessions persistantes par appareil</li>
           </ul>
         </article>
 
         <article className="panel">
-          <p className="eyebrow">Sprint 0.2</p>
-          <h3>Architecture</h3>
+          <p className="eyebrow">Sprint 1.2</p>
+          <h3>Securisation</h3>
           <ul className="bullet-list">
-            <li>Prisma configure et migrations operationnelles</li>
-            <li>Backend structure par modules metier</li>
-            <li>OpenAPI / docs accessibles</li>
+            <li>`GET /me`, `PATCH /me`, `logout`, `logout-all`</li>
+            <li>Routes protegees et guard frontend</li>
+            <li>Rate limiting et logging backend</li>
           </ul>
         </article>
 
         <article className="panel">
-          <p className="eyebrow">Frontend shell</p>
-          <h3>Application ready</h3>
+          <p className="eyebrow">API</p>
+          <h3>Etat runtime</h3>
           <ul className="bullet-list">
-            <li>React Router actif</li>
-            <li>Layout principal avec navigation</li>
-            <li>Theme light / dark / system</li>
+            <li>Origine API: {getApiOrigin()}</li>
+            <li>Base: {error ? "indisponible" : "operationnelle"}</li>
+            <li>Docs: `/docs` accessibles</li>
           </ul>
         </article>
       </div>
