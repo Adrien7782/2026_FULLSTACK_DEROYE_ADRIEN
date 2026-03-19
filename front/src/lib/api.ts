@@ -2,9 +2,18 @@ const API_ORIGIN = (import.meta.env.VITE_API_URL ?? "").trim();
 const API_BASE_URL = API_ORIGIN ? `${API_ORIGIN}/api` : "/api";
 const HEALTH_URL = API_ORIGIN ? `${API_ORIGIN}/health` : "/health";
 const DOCS_URL = API_ORIGIN ? `${API_ORIGIN}/docs` : "/docs";
+export const UPLOAD_MAX_VIDEO_MB = Number(import.meta.env.VITE_UPLOAD_MAX_VIDEO_MB ?? 15360);
+export const UPLOAD_MAX_IMAGE_MB = Number(import.meta.env.VITE_UPLOAD_MAX_IMAGE_MB ?? 10);
+
+// Le proxy Vite utilise follow-redirects (limite 10 Mo hardcodée).
+// En dev, l'upload multipart va directement au backend pour éviter ce buffer.
+const UPLOAD_BASE_URL = import.meta.env.DEV
+  ? "http://localhost:3000/api"
+  : API_BASE_URL;
 
 export type UserRole = "standard" | "admin";
 export type MediaType = "film" | "series";
+export type MediaStatus = "draft" | "published" | "archived";
 
 export type HealthResponse = {
   ok: boolean;
@@ -50,6 +59,7 @@ export type MediaCardItem = {
   title: string;
   synopsis: string;
   type: MediaType;
+  status: MediaStatus;
   releaseYear: number | null;
   durationMinutes: number | null;
   hasVideo: boolean;
@@ -77,6 +87,7 @@ export type CatalogListResponse = {
     type: MediaType;
     search: string | null;
     genre: string | null;
+    status?: "published" | "draft" | "all" | null;
   };
 };
 
@@ -138,8 +149,17 @@ export type ListMediaParams = {
   type?: MediaType;
   search?: string;
   genre?: string;
+  status?: "published" | "draft" | "all";
   cursor?: number | null;
   limit?: number;
+};
+
+export type PathValidationKind = "video" | "poster";
+
+export type PathValidationResponse = {
+  found: boolean;
+  message: string;
+  normalizedPath?: string | null;
 };
 
 type ApiErrorBody = {
@@ -170,6 +190,9 @@ export const getMediaPosterUrl = (slug: string) =>
 
 export const getMediaStreamUrl = (slug: string) =>
   `${API_BASE_URL}/media/${encodeURIComponent(slug)}/stream`;
+
+export const getUploadTooLargeMessage = () =>
+  `Fichier trop volumineux. Limites: ${UPLOAD_MAX_VIDEO_MB} Mo pour la video et ${UPLOAD_MAX_IMAGE_MB} Mo pour l'affiche.`;
 
 const request = async <T>(path: string, init?: RequestInit) => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -272,6 +295,7 @@ export const listCatalogMedia = (params: ListMediaParams = {}) =>
       type: params.type ?? "film",
       search: params.search,
       genre: params.genre,
+      status: params.status,
       cursor: params.cursor,
       limit: params.limit,
     })}`,
@@ -280,10 +304,14 @@ export const listCatalogMedia = (params: ListMediaParams = {}) =>
     },
   );
 
-export const listCatalogGenres = (type: MediaType = "film") =>
+export const listCatalogGenres = (
+  type: MediaType = "film",
+  status?: "published" | "draft" | "all",
+) =>
   request<{ items: CatalogGenre[] }>(
     `/media/genres${buildSearchParams({
       type,
+      status,
     })}`,
     {
       method: "GET",
@@ -293,4 +321,58 @@ export const listCatalogGenres = (type: MediaType = "film") =>
 export const getMediaDetail = (slug: string) =>
   request<MediaDetailResponse>(`/media/${slug}`, {
     method: "GET",
+  });
+
+export const validateMediaPath = (path: string, kind: PathValidationKind) =>
+  request<PathValidationResponse>("/admin/media/validate-path", {
+    method: "POST",
+    body: JSON.stringify({ path, kind }),
+  });
+
+export type CreateMediaResult = {
+  media: MediaCardItem & { updatedAt: string };
+};
+
+export const createMediaWithProgress = (
+  formData: FormData,
+  onProgress: (percent: number) => void,
+): Promise<CreateMediaResult> =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.withCredentials = true;
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let body: Record<string, unknown> = {};
+      try {
+        if (xhr.responseText) body = JSON.parse(xhr.responseText) as Record<string, unknown>;
+      } catch {
+        /* réponse non-JSON */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body as CreateMediaResult);
+      } else {
+        const fallbackMessage =
+          xhr.status === 413 ? getUploadTooLargeMessage() : "Upload echoue";
+
+        reject(
+          new ApiClientError(
+            (body["message"] as string | undefined) ?? fallbackMessage,
+            xhr.status,
+            body["details"],
+          ),
+        );
+      }
+    };
+
+    xhr.onerror = () => reject(new ApiClientError("Erreur reseau pendant l'upload", 0));
+    xhr.onabort = () => reject(new ApiClientError("Upload annule", 0));
+
+    xhr.open("POST", `${UPLOAD_BASE_URL}/admin/media`);
+    xhr.send(formData);
   });

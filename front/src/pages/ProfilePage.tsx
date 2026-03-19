@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSession } from "../auth/useSession";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export function ProfilePage() {
   const { user, session } = useSession();
@@ -42,7 +43,7 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
         isLikesPrivate,
       });
 
-      setSuccessMessage("Profil mis a jour.");
+      setSuccessMessage("Profil mis à jour.");
     } catch {
       return;
     }
@@ -55,27 +56,27 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
           <p className="eyebrow">Profil</p>
           <h2>{user.firstName ?? user.username}</h2>
           <p className="muted">
-            Gere ici les informations du compte, la confidentialite des likes et la
+            Gérez ici les informations du compte, la confidentialité des likes et la
             session active.
           </p>
         </div>
 
         <div className="status-grid">
           <article className="status-card">
-            <span className="status-label">Role</span>
+            <span className="status-label">Rôle</span>
             <strong>{user.role}</strong>
-            <p>Seul un administrateur peut acceder aux routes `admin` plus tard.</p>
+            <p>Seul un administrateur peut accéder aux routes admin.</p>
           </article>
 
           <article className="status-card">
             <span className="status-label">Session</span>
             <strong>Active</strong>
-            <p>Expiration: {new Date(session.expiresAt).toLocaleString()}</p>
+            <p>Expiration : {new Date(session.expiresAt).toLocaleString()}</p>
           </article>
 
           <article className="status-card">
-            <span className="status-label">Device</span>
-            <strong>{session.userAgent ? "Tracked" : "Unknown"}</strong>
+            <span className="status-label">Appareil</span>
+            <strong>{session.userAgent ? "Identifié" : "Inconnu"}</strong>
             <p>{session.userAgent ?? "User-Agent non transmis"}</p>
           </article>
         </div>
@@ -84,12 +85,12 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
       <div className="profile-grid">
         <div className="panel">
           <p className="eyebrow">Informations</p>
-          <h3>Mettre a jour le profil</h3>
+          <h3>Mettre à jour le profil</h3>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-grid">
               <label>
-                <span>Username</span>
+                <span>Nom d&apos;utilisateur</span>
                 <input value={username} onChange={(event) => setUsername(event.target.value)} />
               </label>
 
@@ -103,7 +104,7 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
               </label>
 
               <label>
-                <span>Prenom</span>
+                <span>Prénom</span>
                 <input
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
@@ -116,7 +117,7 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
               </label>
 
               <label className="full-width">
-                <span>Avatar URL</span>
+                <span>URL de l&apos;avatar</span>
                 <input
                   type="url"
                   value={avatarUrl}
@@ -132,7 +133,7 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
                 checked={isLikesPrivate}
                 onChange={(event) => setIsLikesPrivate(event.target.checked)}
               />
-              <span>Masquer mes likes aux autres utilisateurs quand cette option sera active</span>
+              <span>Masquer mes likes aux autres utilisateurs</span>
             </label>
 
             {(error || successMessage) && (
@@ -144,28 +145,34 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
                 {isBusy ? "Sauvegarde..." : "Enregistrer"}
               </button>
               <button type="button" className="secondary-button" onClick={() => void refresh()}>
-                Rotation de session
+                Renouveler la session
               </button>
             </div>
           </form>
         </div>
 
         <div className="panel">
-          <p className="eyebrow">Securite</p>
+          <p className="eyebrow">Sécurité</p>
           <h3>Sessions et compte</h3>
           <ul className="bullet-list">
-            <li>Session creee le {new Date(session.createdAt).toLocaleString()}</li>
-            <li>Derniere utilisation le {new Date(session.lastUsedAt).toLocaleString()}</li>
-            <li>Compte cree le {new Date(user.createdAt).toLocaleDateString()}</li>
+            <li>Session créée le {new Date(session.createdAt).toLocaleString()}</li>
+            <li>Dernière utilisation le {new Date(session.lastUsedAt).toLocaleString()}</li>
+            <li>Compte créé le {new Date(user.createdAt).toLocaleDateString()}</li>
           </ul>
 
           <div className="stack-actions">
             <button type="button" className="secondary-button" onClick={() => void logout()}>
-              Se deconnecter de cet appareil
+              Se déconnecter de cet appareil
             </button>
             <button type="button" className="danger-button" onClick={() => void logoutAll()}>
-              Se deconnecter partout
+              Se déconnecter partout
             </button>
+          </div>
+
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--border)" }}>
+            <p className="eyebrow">Apparence</p>
+            <h3 style={{ marginBottom: "14px" }}>Thème de l&apos;interface</h3>
+            <ThemeToggle />
           </div>
         </div>
       </div>

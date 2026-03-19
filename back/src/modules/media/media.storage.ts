@@ -1,20 +1,10 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { resolve, sep } from "node:path";
 import type { Request, Response } from "express";
-import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import { resolveManagedStoragePath } from "./media.upload.js";
 
-const resolveStoragePath = (relativePath: string) => {
-  const absolutePath = resolve(env.DATA_DIRECTORY, relativePath);
-  const normalizedDataDirectory = `${env.DATA_DIRECTORY}${sep}`;
-
-  if (!absolutePath.startsWith(normalizedDataDirectory) && absolutePath !== env.DATA_DIRECTORY) {
-    throw new ApiError(400, "Invalid media path");
-  }
-
-  return absolutePath;
-};
+type ViewerRole = "standard" | "admin" | undefined;
 
 const detectContentType = (relativePath: string) => {
   const normalizedPath = relativePath.toLowerCase();
@@ -50,11 +40,11 @@ const detectContentType = (relativePath: string) => {
   return "application/octet-stream";
 };
 
-export const sendPosterAsset = async (slug: string, res: Response) => {
+export const sendPosterAsset = async (slug: string, res: Response, viewerRole?: ViewerRole) => {
   const media = await prisma.media.findFirst({
     where: {
       slug,
-      status: "published",
+      ...(viewerRole === "admin" ? {} : { status: "published" }),
     },
     select: {
       posterPath: true,
@@ -69,7 +59,7 @@ export const sendPosterAsset = async (slug: string, res: Response) => {
     throw new ApiError(404, "Poster not found");
   }
 
-  const absolutePath = resolveStoragePath(media.posterPath);
+  const absolutePath = resolveManagedStoragePath(media.posterPath);
 
   if (!existsSync(absolutePath)) {
     throw new ApiError(404, "Poster file is missing on disk");
@@ -121,11 +111,16 @@ const parseByteRange = (rangeHeader: string, fileSize: number) => {
   return { start, end };
 };
 
-export const sendVideoStream = async (slug: string, req: Request, res: Response) => {
+export const sendVideoStream = async (
+  slug: string,
+  req: Request,
+  res: Response,
+  viewerRole?: ViewerRole,
+) => {
   const media = await prisma.media.findFirst({
     where: {
       slug,
-      status: "published",
+      ...(viewerRole === "admin" ? {} : { status: "published" }),
     },
     select: {
       videoPath: true,
@@ -140,7 +135,7 @@ export const sendVideoStream = async (slug: string, req: Request, res: Response)
     throw new ApiError(404, "Video file not configured for this media");
   }
 
-  const absolutePath = resolveStoragePath(media.videoPath);
+  const absolutePath = resolveManagedStoragePath(media.videoPath);
 
   if (!existsSync(absolutePath)) {
     throw new ApiError(404, "Video file is missing on disk");

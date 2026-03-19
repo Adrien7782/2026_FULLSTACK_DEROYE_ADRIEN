@@ -4,3 +4,10 @@ node_modules
 
 dist
 src/generated
+
+data/**
+!data/README.md
+!data/FILMS/
+!data/FILMS/.gitkeep
+!data/SERIES/
+!data/SERIES/.gitkeep

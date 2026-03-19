@@ -96,7 +96,7 @@ Les medias sont stockes en local sur le PC serveur. L'acces se fait via des path
 
 Je veux utiliser la clean architecture pour organiser mon code de maniere modulaire et faciliter la maintenance et l'evolution de l'application. Je vais separer les differentes couches de l'application (controleurs, services, modeles, etc...) pour une meilleure organisation du code.
 
-Utiliser Swagger pour faire la documentation de l'API.
+Utiliser Swagger pour faire la documentation de l'API. Met le à jour à chaque étape. 
 
 ### Technologies utilisees
 
@@ -153,7 +153,7 @@ JWT_REFRESH_SECRET=your_secret_key_for_jwt_refresh_token_generation
 JWT_ACCESS_EXPIRATION=900        # 15 minutes
 
 JWT_REFRESH_EXPIRATION=604800    # 7 jours
-MAX_FILE_SIZE=5000000000 # en octets (5 Go)
+MAX_FILE_SIZE=5000000000 # en octets (15 Go)
 ALLOWED_FILE_TYPES=image/jpeg,image/png,video/mp4
 
 LOGS_FILE=/var/log/rs.log

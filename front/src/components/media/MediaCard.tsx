@@ -19,6 +19,12 @@ const getFallbackLabel = (title: string) =>
 export function MediaCard({ media }: MediaCardProps) {
   const year = media.releaseYear ? String(media.releaseYear) : "Annee inconnue";
   const duration = media.durationMinutes ? `${media.durationMinutes} min` : "Duree inconnue";
+  const statusLabel =
+    media.status === "draft"
+      ? "Brouillon"
+      : media.status === "archived"
+        ? "Archive"
+        : "Publie";
 
   return (
     <article className="media-card">
@@ -40,6 +46,7 @@ export function MediaCard({ media }: MediaCardProps) {
         <div className="media-card-body">
           <div className="media-card-header">
             <h3>{media.title}</h3>
+            <span className={`media-status-badge is-${media.status}`}>{statusLabel}</span>
             <p className="muted">
               {year} / {duration}
             </p>

@@ -17,6 +17,8 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
   LOGS_FILE: z.string().min(1).optional(),
+  UPLOAD_MAX_VIDEO_MB: z.coerce.number().int().positive().default(15360),
+  UPLOAD_MAX_IMAGE_MB: z.coerce.number().int().positive().default(10),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

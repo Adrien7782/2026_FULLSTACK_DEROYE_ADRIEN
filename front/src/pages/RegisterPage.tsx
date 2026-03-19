@@ -42,18 +42,18 @@ export function RegisterPage() {
     <section className="page-section">
       <div className="panel auth-panel">
         <div>
-          <p className="eyebrow">Phase 1</p>
-          <h2>Creer un compte</h2>
+          <p className="eyebrow">Inscription</p>
+          <h2>Créer un compte</h2>
           <p className="muted">
-            Le compte cree une session persistante en base et ouvre immediatement
-            l&apos;application privee.
+            Le compte crée une session persistante en base et ouvre immédiatement
+            l&apos;application privée.
           </p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-grid">
             <label>
-              <span>Username</span>
+              <span>Nom d&apos;utilisateur</span>
               <input
                 type="text"
                 value={username}
@@ -77,7 +77,7 @@ export function RegisterPage() {
             </label>
 
             <label>
-              <span>Prenom</span>
+              <span>Prénom</span>
               <input
                 type="text"
                 value={firstName}
@@ -102,7 +102,7 @@ export function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Minimum 8 caracteres"
+                placeholder="Minimum 8 caractères"
                 autoComplete="new-password"
                 required
               />
@@ -125,10 +125,10 @@ export function RegisterPage() {
 
           <div className="action-row">
             <button type="submit" className="primary-button" disabled={isBusy}>
-              {isBusy ? "Creation..." : "Creer le compte"}
+              {isBusy ? "Création..." : "Créer le compte"}
             </button>
             <Link className="secondary-link" to="/login">
-              Deja un compte ?
+              Déjà un compte ?
             </Link>
           </div>
         </form>

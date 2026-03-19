@@ -2,8 +2,8 @@ export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "StreamAdy API",
-    version: "0.3.1",
-    description: "Phase 2 API document for authentication, users, media catalog and local assets.",
+    version: "0.4.0",
+    description: "Phase 3 API document: authentication, users, media catalog, local assets and admin media upload.",
   },
   servers: [
     {
@@ -135,7 +135,7 @@ export const openApiDocument = {
     "/api/media": {
       get: {
         tags: ["Media"],
-        summary: "List published catalog media with title search, genre filter and cursor pagination",
+        summary: "List catalog media with title search, genre filter, status filter and cursor pagination",
         responses: {
           "200": {
             description: "Catalog page returned",
@@ -235,6 +235,75 @@ export const openApiDocument = {
           "403": {
             description: "Admin role required",
           },
+        },
+      },
+    },
+    "/api/admin/media": {
+      post: {
+        tags: ["Admin"],
+        summary: "Create a new film by referencing local files or by uploading managed copies (admin only)",
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["title", "synopsis"],
+                properties: {
+                  title: { type: "string", maxLength: 200 },
+                  synopsis: { type: "string", maxLength: 2000 },
+                  releaseYear: { type: "integer", minimum: 1888, maximum: 2100 },
+                  durationMinutes: { type: "integer", minimum: 1, maximum: 999 },
+                  status: { type: "string", enum: ["draft", "published"], default: "published" },
+                  genreIds: {
+                    type: "string",
+                    description: "JSON-encoded array of genre UUIDs",
+                  },
+                  videoSourceMode: {
+                    type: "string",
+                    enum: ["reference", "upload"],
+                    default: "reference",
+                    description: "Use a local disk path or upload a managed copy",
+                  },
+                  posterSourceMode: {
+                    type: "string",
+                    enum: ["reference", "upload"],
+                    default: "reference",
+                    description: "Use a local disk path or upload a managed copy",
+                  },
+                  videoPath: {
+                    type: "string",
+                    description: "Absolute path on the host or path relative to DATA_DIRECTORY",
+                  },
+                  posterPath: {
+                    type: "string",
+                    description: "Absolute path on the host or path relative to DATA_DIRECTORY",
+                  },
+                  video: { type: "string", format: "binary", description: "Video file (mp4, webm, mov, m4v)" },
+                  poster: { type: "string", format: "binary", description: "Poster image (jpeg, png, gif, webp, svg)" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Media created from a local reference or a managed upload" },
+          "400": { description: "Validation error or invalid file type/size" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+    "/api/admin/media/validate-path": {
+      post: {
+        tags: ["Admin"],
+        summary: "Validate that a local video or poster path can be read by the backend",
+        responses: {
+          "200": {
+            description: "Validation result returned",
+          },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
         },
       },
     },

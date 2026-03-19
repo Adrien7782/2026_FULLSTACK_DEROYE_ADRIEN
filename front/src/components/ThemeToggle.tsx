@@ -5,33 +5,33 @@ export function ThemeToggle() {
 
   return (
     <div>
-      <div className="theme-toggle" aria-label="Theme selector">
+      <div className="theme-toggle" aria-label="Sélecteur de thème">
         <button
           type="button"
           className={theme === "light" ? "is-active" : undefined}
           onClick={() => setTheme("light")}
         >
-          Light
+          Clair
         </button>
         <button
           type="button"
           className={theme === "dark" ? "is-active" : undefined}
           onClick={() => setTheme("dark")}
         >
-          Dark
+          Sombre
         </button>
         <button
           type="button"
           className={theme === "system" ? "is-active" : undefined}
           onClick={() => setTheme("system")}
         >
-          System
+          Système
         </button>
       </div>
       <p className="theme-toggle-caption">
         {theme === "system"
-          ? `System suit actuellement le mode ${resolvedTheme}.`
-          : `Mode actif: ${resolvedTheme}.`}
+          ? `Le système suit actuellement le mode ${resolvedTheme === "dark" ? "sombre" : "clair"}.`
+          : `Mode actif : ${resolvedTheme === "dark" ? "sombre" : "clair"}.`}
       </p>
     </div>
   );

@@ -2,10 +2,17 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../lib/errors.js";
 import type { z } from "zod";
-import type { mediaGenresQuerySchema, mediaListQuerySchema } from "./media.schemas.js";
+import type { createMediaBodySchema, mediaGenresQuerySchema, mediaListQuerySchema } from "./media.schemas.js";
 
 type MediaListQuery = z.infer<typeof mediaListQuerySchema>;
 type MediaGenresQuery = z.infer<typeof mediaGenresQuerySchema>;
+type CreateMediaBody = z.infer<typeof createMediaBodySchema>;
+type ViewerRole = "standard" | "admin" | undefined;
+
+type CreateMediaInput = CreateMediaBody & {
+  videoPath?: string;
+  posterPath?: string;
+};
 
 const genreSelect = {
   id: true,
@@ -20,6 +27,7 @@ const mediaCardSelect = {
   title: true,
   synopsis: true,
   type: true,
+  status: true,
   releaseYear: true,
   durationMinutes: true,
   videoPath: true,
@@ -51,6 +59,7 @@ const mapMediaCard = (media: MediaCardRecord) => ({
   title: media.title,
   synopsis: media.synopsis,
   type: media.type,
+  status: media.status,
   releaseYear: media.releaseYear,
   durationMinutes: media.durationMinutes,
   hasVideo: Boolean(media.videoPath),
@@ -60,10 +69,27 @@ const mapMediaCard = (media: MediaCardRecord) => ({
   genres: media.genres,
 });
 
-const buildPublishedWhere = (query: MediaListQuery) =>
-  ({
-    status: "published",
+const resolveStatusFilter = (
+  requestedStatus: MediaListQuery["status"] | MediaGenresQuery["status"] | undefined,
+  viewerRole: ViewerRole,
+) => {
+  if (viewerRole !== "admin") {
+    return "published" as const;
+  }
+
+  return requestedStatus ?? "all";
+};
+
+const buildCatalogWhere = (query: MediaListQuery, viewerRole: ViewerRole) => {
+  const statusFilter = resolveStatusFilter(query.status, viewerRole);
+
+  return ({
     type: query.type,
+    ...(statusFilter !== "all"
+      ? {
+          status: statusFilter,
+        }
+      : {}),
     ...(query.search
       ? {
           title: {
@@ -82,9 +108,11 @@ const buildPublishedWhere = (query: MediaListQuery) =>
         }
       : {}),
   }) satisfies Prisma.MediaWhereInput;
+};
 
-export const listCatalogMedia = async (query: MediaListQuery) => {
-  const where = buildPublishedWhere(query);
+export const listCatalogMedia = async (query: MediaListQuery, viewerRole?: ViewerRole) => {
+  const resolvedStatus = resolveStatusFilter(query.status, viewerRole);
+  const where = buildCatalogWhere(query, viewerRole);
   const records = await prisma.media.findMany({
     where,
     select: mediaCardSelect,
@@ -117,18 +145,25 @@ export const listCatalogMedia = async (query: MediaListQuery) => {
       type: query.type,
       search: query.search ?? null,
       genre: query.genre ?? null,
+      status: resolvedStatus,
     },
   };
 };
 
-export const listCatalogGenres = async (query: MediaGenresQuery) => {
+export const listCatalogGenres = async (
+  query: MediaGenresQuery,
+  viewerRole?: ViewerRole,
+) => {
+  const statusFilter = resolveStatusFilter(query.status, viewerRole);
+  const genreMediaWhere = {
+    type: query.type,
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+  } satisfies Prisma.MediaWhereInput;
+
   const genres = await prisma.genre.findMany({
     where: {
       medias: {
-        some: {
-          type: query.type,
-          status: "published",
-        },
+        some: genreMediaWhere,
       },
     },
     orderBy: {
@@ -141,10 +176,7 @@ export const listCatalogGenres = async (query: MediaGenresQuery) => {
       _count: {
         select: {
           medias: {
-            where: {
-              type: query.type,
-              status: "published",
-            },
+            where: genreMediaWhere,
           },
         },
       },
@@ -221,11 +253,53 @@ export const getCatalogHome = async () => {
   };
 };
 
-export const getMediaDetail = async (slug: string) => {
+const slugify = (title: string) =>
+  title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+export const createMedia = async (input: CreateMediaInput) => {
+  const baseSlug = slugify(input.title);
+  let slug = baseSlug;
+
+  for (let attempt = 1; ; attempt++) {
+    const existing = await prisma.media.findUnique({ where: { slug } });
+    if (!existing) break;
+    slug = `${baseSlug}-${attempt}`;
+  }
+
+  const media = await prisma.media.create({
+    data: {
+      slug,
+      title: input.title,
+      synopsis: input.synopsis,
+      type: "film",
+      status: input.status,
+      releaseYear: input.releaseYear,
+      durationMinutes: input.durationMinutes,
+      videoPath: input.videoPath,
+      posterPath: input.posterPath,
+      ...(input.genreIds?.length
+        ? { genres: { connect: input.genreIds.map((id) => ({ id })) } }
+        : {}),
+    },
+    select: mediaDetailSelect,
+  });
+
+  return {
+    ...mapMediaCard(media),
+    updatedAt: media.updatedAt,
+  };
+};
+
+export const getMediaDetail = async (slug: string, viewerRole?: ViewerRole) => {
   const media = await prisma.media.findFirst({
     where: {
       slug,
-      status: "published",
+      ...(viewerRole === "admin" ? {} : { status: "published" }),
     },
     select: mediaDetailSelect,
   });

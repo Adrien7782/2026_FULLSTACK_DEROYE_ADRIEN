@@ -16,7 +16,7 @@ export const mediaRouter = Router();
 
 mediaRouter.get("/", async (req, res) => {
   const query = mediaListQuerySchema.parse(req.query);
-  const payload = await listCatalogMedia(query);
+  const payload = await listCatalogMedia(query, req.auth?.user.role);
 
   res.status(200).json(payload);
 });
@@ -29,24 +29,24 @@ mediaRouter.get("/home", async (_req, res) => {
 
 mediaRouter.get("/genres", async (req, res) => {
   const query = mediaGenresQuerySchema.parse(req.query);
-  const payload = await listCatalogGenres(query);
+  const payload = await listCatalogGenres(query, req.auth?.user.role);
 
   res.status(200).json(payload);
 });
 
 mediaRouter.get("/:slug/poster", async (req, res) => {
   const params = mediaSlugParamsSchema.parse(req.params);
-  await sendPosterAsset(params.slug, res);
+  await sendPosterAsset(params.slug, res, req.auth?.user.role);
 });
 
 mediaRouter.get("/:slug/stream", async (req, res) => {
   const params = mediaSlugParamsSchema.parse(req.params);
-  await sendVideoStream(params.slug, req, res);
+  await sendVideoStream(params.slug, req, res, req.auth?.user.role);
 });
 
 mediaRouter.get("/:slug", async (req, res) => {
   const params = mediaSlugParamsSchema.parse(req.params);
-  const payload = await getMediaDetail(params.slug);
+  const payload = await getMediaDetail(params.slug, req.auth?.user.role);
 
   res.status(200).json(payload);
 });

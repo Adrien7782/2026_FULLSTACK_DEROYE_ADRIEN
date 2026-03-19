@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIEN -type f -name *.prisma)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node --input-type=module --eval \":*)"
+    ]
+  }
+}

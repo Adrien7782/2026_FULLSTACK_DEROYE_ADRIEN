@@ -31,17 +31,17 @@ export function LoginPage() {
     <section className="page-section">
       <div className="panel auth-panel">
         <div>
-          <p className="eyebrow">Phase 1</p>
+          <p className="eyebrow">Authentification</p>
           <h2>Connexion</h2>
           <p className="muted">
-            La session est basee sur un cookie HTTP-only et une entree persistante dans
+            La session est basée sur un cookie HTTP-only et une entrée persistante dans
             PostgreSQL.
           </p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>Username</span>
+            <span>Nom d&apos;utilisateur</span>
             <input
               type="text"
               placeholder="adrien"
@@ -53,10 +53,10 @@ export function LoginPage() {
           </label>
 
           <label>
-            <span>Password</span>
+            <span>Mot de passe</span>
             <input
               type="password"
-              placeholder="********"
+              placeholder="••••••••"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -71,7 +71,7 @@ export function LoginPage() {
               {isBusy ? "Connexion..." : "Se connecter"}
             </button>
             <Link className="secondary-link" to="/register">
-              Creer un compte
+              Créer un compte
             </Link>
           </div>
         </form>

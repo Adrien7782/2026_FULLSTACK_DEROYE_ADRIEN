@@ -89,6 +89,13 @@ export function FilmDetailPage() {
   const { item, related } = detail;
   const streamUrl = getMediaStreamUrl(item.slug);
   const posterUrl = getMediaPosterUrl(item.slug);
+  const playerPoster = item.hasPoster ? posterUrl : undefined;
+  const statusLabel =
+    item.status === "draft"
+      ? "Brouillon"
+      : item.status === "archived"
+        ? "Archive"
+        : "Publie";
 
   return (
     <section className="page-section">
@@ -96,6 +103,7 @@ export function FilmDetailPage() {
         <div className="detail-hero-content">
           <p className="eyebrow">Fiche film</p>
           <h2>{item.title}</h2>
+          <span className={`media-status-badge is-${item.status}`}>{statusLabel}</span>
           <p className="muted">{item.synopsis}</p>
 
           <div className="chip-row">
@@ -131,14 +139,7 @@ export function FilmDetailPage() {
           </div>
 
           <div className="action-row">
-            <Link className="primary-link" to="/films">
-              Retour au catalogue
-            </Link>
-            {item.hasVideo ? (
-              <a className="secondary-link" href={streamUrl} target="_blank" rel="noreferrer">
-                Ouvrir le flux video
-              </a>
-            ) : (
+            {item.hasVideo ? null : (
               <button type="button" className="secondary-button" disabled>
                 Video locale absente
               </button>
@@ -160,20 +161,39 @@ export function FilmDetailPage() {
       <div className="panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Informations</p>
-            <h3>Resume du media</h3>
+            <p className="eyebrow">Lecture</p>
+            <h3>Lecteur video integre</h3>
           </div>
         </div>
 
-        <div className="detail-summary-grid">
-          <div className="detail-summary-copy">
-            <p>{item.synopsis}</p>
-            <p className="muted">
-              Cree le {new Date(item.createdAt).toLocaleDateString()} - mis a jour le{" "}
+        {item.hasVideo ? (
+          <div className="media-player-section">
+            <div className="media-player-shell">
+              <video
+                className="media-player"
+                controls
+                preload="metadata"
+                poster={playerPoster}
+                src={streamUrl}
+              >
+                Votre navigateur ne supporte pas la lecture video HTML5.
+              </video>
+            </div>
+
+            <p className="muted media-player-caption">
+              Lecture locale diffusée par l&apos;API avec support du chargement progressif. Créé le{" "}
+              {new Date(item.createdAt).toLocaleDateString()} - mis a jour le{" "}
               {new Date(item.updatedAt).toLocaleDateString()}.
             </p>
           </div>
-        </div>
+        ) : (
+          <div className="empty-state">
+            <p className="muted">
+              Aucun fichier video local n&apos;est encore rattache a ce film. Ajoute un `videoPath`
+              cote backend pour activer la lecture integree ici.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="panel">

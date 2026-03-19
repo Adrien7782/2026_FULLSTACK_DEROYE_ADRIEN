@@ -1,24 +1,24 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useSession } from "../auth/useSession";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { GlobalUploadIndicator } from "../components/upload/GlobalUploadIndicator";
 import { getDocsUrl } from "../lib/api";
 
 export function AppLayout() {
   const { user, isAuthenticated, isBusy, logout } = useSession();
+  const initials = user?.username?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
         <div className="brand-block">
           <p className="eyebrow">StreamAdy</p>
-          <h1>Phase 1</h1>
+          <h1>Phase 3</h1>
           <p className="muted">
-            Application privee avec authentification `username/password`, session
-            persistante et profil utilisateur.
+            Catalogue avec upload admin et streaming video avec support HTTP Range.
           </p>
         </div>
 
-        <nav className="app-nav" aria-label="Primary navigation">
+        <nav className="app-nav" aria-label="Navigation principale">
           {isAuthenticated ? (
             <>
               <NavLink to="/" end>
@@ -39,16 +39,17 @@ export function AppLayout() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="account-card">
-            <p className="account-title">{isAuthenticated ? "Session active" : "Acces public"}</p>
-            <strong>{isAuthenticated ? user?.username : "Visiteur"}</strong>
-            <p className="muted">
-              {isAuthenticated
-                ? `${user?.role} - ${user?.email}`
-                : "Connecte-toi pour ouvrir les pages protegees."}
-            </p>
-
-            {isAuthenticated && (
+          {isAuthenticated && user ? (
+            <div className="sidebar-user">
+              <div className="sidebar-user-header">
+                <div className="nav-user-avatar">
+                  {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : <span>{initials}</span>}
+                </div>
+                <div className="nav-user-info">
+                  <span className="nav-user-name">{user.username}</span>
+                  <span className={`nav-user-role role-${user.role}`}>{user.role}</span>
+                </div>
+              </div>
               <button
                 type="button"
                 className="secondary-button full-width"
@@ -57,15 +58,21 @@ export function AppLayout() {
               >
                 Se deconnecter
               </button>
-            )}
-          </div>
-          <ThemeToggle />
+            </div>
+          ) : (
+            <div className="account-card">
+              <p className="account-title">Acces public</p>
+              <p className="muted">Connecte-toi pour acceder aux pages protegees.</p>
+            </div>
+          )}
         </div>
       </aside>
 
       <main className="app-content">
         <Outlet />
       </main>
+
+      <GlobalUploadIndicator />
     </div>
   );
 }

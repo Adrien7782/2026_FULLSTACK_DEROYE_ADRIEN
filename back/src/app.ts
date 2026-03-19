@@ -3,6 +3,7 @@ import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import multer from "multer";
 import { ZodError } from "zod";
 import { env } from "./config/env.js";
 import { ApiError, isApiError } from "./lib/errors.js";
@@ -65,6 +66,17 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     res.status(400).json({
       message: "Validation failed",
       details: error.flatten(),
+    });
+    return;
+  }
+
+  if (error instanceof multer.MulterError) {
+    const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    res.status(status).json({
+      message:
+        error.code === "LIMIT_FILE_SIZE"
+          ? `Fichier trop volumineux (limite: ${env.UPLOAD_MAX_VIDEO_MB} Mo pour la video, ${env.UPLOAD_MAX_IMAGE_MB} Mo pour l'image)`
+          : `Erreur upload: ${error.message}`,
     });
     return;
   }

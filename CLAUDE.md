@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 ## Objet du projet
 
@@ -20,11 +20,13 @@ Avant toute modification, lire dans cet ordre:
 
 1. `cahier_des_charges.md`
 2. `documentation/PLAN_IMPLEMENTATION.md`
+3. `CORRECTIONS.md`
 
 Regle:
 
 - `cahier_des_charges.md` definit le besoin produit.
 - `documentation/PLAN_IMPLEMENTATION.md` definit l'ordre de livraison et le sequencing par phases/sprints.
+- `CORRECTIONS.md` regroupe les remarques, ajustements et defauts a corriger au fil du developpement.
 - En cas de conflit de priorite, suivre `documentation/PLAN_IMPLEMENTATION.md`.
 
 ## Etat actuel du workspace
@@ -36,6 +38,9 @@ Regle:
 - La phase 1 est deja branchee de bout en bout: inscription, connexion, session cookie, `GET /me`, `PATCH /me`, `logout`, `logout-all`.
 - La phase 2 est deja branchee de bout en bout: `Media + Genre`, home catalogue, listing films, filtre par genre, pagination par curseur, fiche detail media.
 - Les affiches catalogue sont maintenant stockees localement dans `back/data/posters` et servies via `GET /api/media/:slug/poster`.
+- La phase 3 est deja branchee de bout en bout:
+  - Sprint 3.1 Upload: `POST /api/admin/media` (admin only, multipart/form-data) avec multer, validation MIME/taille, stockage local video+poster, enregistrement en base, suivi de progression XHR cote frontend, popup admin, indicateur flottant global persistant.
+  - Sprint 3.2 Streaming: `GET /api/media/:slug/stream` avec HTTP Range, auth via middleware global, lecteur HTML5 integre dans la fiche detail.
 
 ## Regles de cadrage
 
@@ -112,3 +117,12 @@ Une fonctionnalite n'est pas consideree terminee si:
 - la validation des entrees est absente
 - la documentation d'API n'est pas mise a jour
 - les variables d'environnement necessaires ne sont pas documentees
+
+# Avancement
+Mets à jour automatiquement l'avancement à la fin du développement
+
+## Dernière phase terminée
+Phase 3
+
+## Prochaine phase
+Phase 4

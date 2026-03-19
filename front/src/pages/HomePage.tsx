@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
 import { getCatalogHome, type CatalogHomeResponse } from "../lib/api";
+import { useUpload } from "../upload/useUpload";
 
 export function HomePage() {
+  const { catalogVersion } = useUpload();
   const [catalog, setCatalog] = useState<CatalogHomeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +43,7 @@ export function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [catalogVersion]);
 
   if (isLoading) {
     return (
@@ -78,8 +80,8 @@ export function HomePage() {
             <p className="eyebrow">Accueil</p>
             <h2>Bienvenue sur StreamAdy</h2>
             <p className="muted">
-              Parcours rapidement les derniers films ajoutes, explore par genre et
-              accede au catalogue complet sans passer par des ecrans techniques.
+              Parcourez rapidement les derniers films ajoutés, explorez par genre et
+              accédez au catalogue complet sans passer par des écrans techniques.
             </p>
           </div>
 
@@ -102,7 +104,7 @@ export function HomePage() {
               <p>
                 {catalog?.spotlight
                   ? "Le film mis en avant apparait ci-dessous, sans prendre toute la home."
-                  : "Le bloc spotlight s'activera automatiquement des qu'un film sera disponible."}
+                  : "Le bloc spotlight s'activera automatiquement dès qu'un film sera disponible."}
               </p>
             </article>
           </div>
