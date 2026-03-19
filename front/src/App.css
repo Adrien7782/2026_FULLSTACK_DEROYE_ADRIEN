@@ -1369,3 +1369,188 @@
   }
 
 }
+
+/* ── Interactions (favoris, watchlist, notes) ──────────────── */
+
+.interaction-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.icon-btn.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.rating-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.star-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.1s, transform 0.1s;
+}
+
+.star-btn:hover,
+.star-btn.is-active {
+  color: #f59e0b;
+  transform: scale(1.15);
+}
+
+.star-clear-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px 4px;
+  opacity: 0.6;
+}
+
+.star-clear-btn:hover {
+  opacity: 1;
+  color: var(--danger, #ef4444);
+}
+
+.avg-rating {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ── Historique ─────────────────────────────────────────────── */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+  gap: 12px;
+}
+
+.history-card:hover {
+  border-color: var(--accent);
+  background: var(--card-bg-hover, var(--card-bg));
+}
+
+.history-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-card-info strong {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-card-cta {
+  font-size: 0.8rem;
+  color: var(--accent);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.history-card-badge {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: var(--success-bg, #d1fae5);
+  color: var(--success, #059669);
+  white-space: nowrap;
+}
+
+/* ── Barre de progression lecture ───────────────────────────── */
+
+.playback-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.playback-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* ── Bouton danger ──────────────────────────────────────────── */
+
+.danger-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.danger-button:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.admin-danger-zone {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}

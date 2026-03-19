@@ -1,7 +1,9 @@
 import { unlink } from "node:fs/promises";
+import { join } from "node:path";
 import { Router } from "express";
 import { ApiError } from "../../lib/errors.js";
 import { env } from "../../config/env.js";
+import { prisma } from "../../lib/prisma.js";
 import {
   UPLOAD_MAX_IMAGE_BYTES,
   UPLOAD_MAX_VIDEO_BYTES,
@@ -108,6 +110,14 @@ adminRouter.post(
         throw new ApiError(400, "Renseigne un chemin video local ou importe un fichier.");
       }
 
+      if (!posterFile && !rawPosterPath.trim()) {
+        throw new ApiError(400, "Renseigne un chemin d'affiche local ou importe un fichier.");
+      }
+
+      if (!posterFile && posterSourceMode !== "reference") {
+        throw new ApiError(400, "Le fichier affiche est obligatoire.");
+      }
+
       const videoPath =
         videoSourceMode === "upload"
           ? videoFile
@@ -134,3 +144,22 @@ adminRouter.post(
     }
   },
 );
+
+adminRouter.delete("/media/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const media = await prisma.media.findUnique({ where: { slug } });
+  if (!media) throw new ApiError(404, "Média introuvable");
+
+  // Suppression des fichiers physiques (non bloquante)
+  if (media.videoPath) {
+    await unlink(join(env.DATA_DIRECTORY, media.videoPath)).catch(() => {});
+  }
+  if (media.posterPath) {
+    await unlink(join(env.DATA_DIRECTORY, media.posterPath)).catch(() => {});
+  }
+
+  // Suppression en base (cascade sur favoris, watchlist, notes, playback)
+  await prisma.media.delete({ where: { slug } });
+
+  res.status(204).end();
+});

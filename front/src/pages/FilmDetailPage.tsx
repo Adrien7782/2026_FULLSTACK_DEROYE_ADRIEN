@@ -1,101 +1,206 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
+import { useSession } from "../auth/useSession";
 import {
+  deleteRating,
+  getMediaAverageRating,
   getMediaDetail,
   getMediaPosterUrl,
   getMediaStreamUrl,
+  getPlayback,
+  getRating,
+  getFavoriteStatus,
+  getWatchlistStatus,
+  savePlayback,
+  toggleFavorite,
+  toggleWatchlist,
+  upsertRating,
   type MediaDetailResponse,
 } from "../lib/api";
 
+const deleteMediaFromCatalog = (slug: string) =>
+  fetch(`/api/admin/media/${slug}`, { method: "DELETE", credentials: "include" });
+
 const getFallbackLabel = (title: string) =>
-  title
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+  title.split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "").join("");
+
+function StarRating({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const display = hovered ?? value;
+  return (
+    <div className="star-rating" aria-label="Note de 1 à 5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button key={star} type="button"
+          className={`star-btn${display !== null && star <= display ? " is-active" : ""}`}
+          onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(null)}
+          onClick={() => onChange(value === star ? null : star)}
+          aria-label={`${star} étoile${star > 1 ? "s" : ""}`}>★</button>
+      ))}
+      {value !== null && (
+        <button type="button" className="star-clear-btn" onClick={() => onChange(null)}>✕</button>
+      )}
+    </div>
+  );
+}
 
 export function FilmDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { user } = useSession();
+  const isAdmin = user?.role === "admin";
+
   const [detail, setDetail] = useState<MediaDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [favorited, setFavorited] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [avgRating, setAvgRating] = useState<{ average: number | null; count: number } | null>(null);
+  const [resumePosition, setResumePosition] = useState(0);
+
+  // Refs stables pour les handlers vidéo (évite les stale closures)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaIdRef = useRef<string>("");
+  const lastSavedRef = useRef(0); // timestamp du dernier save (ms)
+
   useEffect(() => {
     let isMounted = true;
-
-    const loadDetail = async () => {
-      if (!slug) {
-        setError("Media slug is missing");
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError("");
-
+    const load = async () => {
+      if (!slug) { setError("Slug manquant"); setIsLoading(false); return; }
+      setIsLoading(true); setError("");
       try {
         const payload = await getMediaDetail(slug);
+        if (!isMounted) return;
+        setDetail(payload);
+        mediaIdRef.current = payload.item.id;
 
-        if (isMounted) {
-          setDetail(payload);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(loadError instanceof Error ? loadError.message : "Failed to load media detail");
-        }
+        const [fav, wl, rating, avg, playback] = await Promise.allSettled([
+          getFavoriteStatus(payload.item.id),
+          getWatchlistStatus(payload.item.id),
+          getRating(payload.item.id),
+          getMediaAverageRating(payload.item.id),
+          getPlayback(payload.item.id),
+        ]);
+        if (!isMounted) return;
+        if (fav.status === "fulfilled") setFavorited(fav.value.favorited);
+        if (wl.status === "fulfilled") setInWatchlist(wl.value.inWatchlist);
+        if (rating.status === "fulfilled") setUserRating(rating.value.value);
+        if (avg.status === "fulfilled") setAvgRating(avg.value);
+        if (playback.status === "fulfilled" && playback.value.positionSeconds > 5)
+          setResumePosition(playback.value.positionSeconds);
+      } catch (e) {
+        if (isMounted) setError(e instanceof Error ? e.message : "Erreur de chargement");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
-
-    void loadDetail();
-
-    return () => {
-      isMounted = false;
-    };
+    void load();
+    return () => { isMounted = false; };
   }, [slug]);
 
-  if (isLoading) {
-    return (
-      <section className="page-section">
-        <div className="panel">
-          <p className="eyebrow">Film</p>
-          <h2>Chargement de la fiche</h2>
-          <p className="muted">La fiche detaillee est en cours de recuperation.</p>
-        </div>
-      </section>
-    );
-  }
+  // Sauvegarde finale quand on quitte la page (navigation SPA)
+  useEffect(() => {
+    return () => {
+      const video = videoRef.current;
+      const id = mediaIdRef.current;
+      if (video && id && video.currentTime >= 1) {
+        const dur = Number.isFinite(video.duration) ? video.duration : undefined;
+        void savePlayback(id, video.currentTime, dur);
+      }
+    };
+  }, []);
 
-  if (error || !detail) {
-    return (
-      <section className="page-section">
-        <div className="panel">
-          <p className="eyebrow">Film</p>
-          <h2>Impossible d&apos;ouvrir cette fiche</h2>
-          <p className="form-error">{error || "Media not found"}</p>
-          <Link className="secondary-link" to="/films">
-            Retour au catalogue
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  // ─── Handlers vidéo (event props React — toujours à jour, pas de stale closure) ───
+
+  const doSave = (video: HTMLVideoElement) => {
+    const id = mediaIdRef.current;
+    if (!id || video.currentTime < 1) return;
+    const dur = Number.isFinite(video.duration) ? video.duration : undefined;
+    void savePlayback(id, video.currentTime, dur);
+    lastSavedRef.current = Date.now();
+  };
+
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (resumePosition > 0) e.currentTarget.currentTime = resumePosition;
+  };
+
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    // Sauvegarde toutes les 10 s de lecture réelle
+    if (Date.now() - lastSavedRef.current >= 10_000) {
+      doSave(e.currentTarget);
+    }
+  };
+
+  const handlePause = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    doSave(e.currentTarget);
+  };
+
+  const handleEnded = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const id = mediaIdRef.current;
+    if (!id) return;
+    // dur = durée connue OU position courante si duration est Infinity/NaN
+    const dur = Number.isFinite(video.duration) ? video.duration : video.currentTime;
+    void savePlayback(id, dur, dur); // completed = true car position/duration >= 0.9
+  };
+
+  // ─── Actions interactions ────────────────────────────────────────────────────
+
+  const handleToggleFavorite = async () => {
+    if (!detail) return;
+    setFavorited((await toggleFavorite(detail.item.id)).favorited);
+  };
+
+  const handleToggleWatchlist = async () => {
+    if (!detail) return;
+    setInWatchlist((await toggleWatchlist(detail.item.id)).inWatchlist);
+  };
+
+  const handleDelete = async () => {
+    if (!detail) return;
+    if (!window.confirm(`Supprimer "${detail.item.title}" du catalogue ? Cette action est irréversible.`)) return;
+    await deleteMediaFromCatalog(detail.item.slug);
+    navigate("/films");
+  };
+
+  const handleRatingChange = async (value: number | null) => {
+    if (!detail) return;
+    if (value === null) { await deleteRating(detail.item.id); setUserRating(null); }
+    else { await upsertRating(detail.item.id, value); setUserRating(value); }
+    setAvgRating(await getMediaAverageRating(detail.item.id));
+  };
+
+  // ─── Rendu ──────────────────────────────────────────────────────────────────
+
+  if (isLoading) return (
+    <section className="page-section">
+      <div className="panel">
+        <p className="eyebrow">Film</p>
+        <h2>Chargement de la fiche</h2>
+        <p className="muted">La fiche détaillée est en cours de récupération.</p>
+      </div>
+    </section>
+  );
+
+  if (error || !detail) return (
+    <section className="page-section">
+      <div className="panel">
+        <p className="eyebrow">Film</p>
+        <h2>Impossible d&apos;ouvrir cette fiche</h2>
+        <p className="form-error">{error || "Média introuvable"}</p>
+        <Link className="secondary-link" to="/films">Retour au catalogue</Link>
+      </div>
+    </section>
+  );
 
   const { item, related } = detail;
   const streamUrl = getMediaStreamUrl(item.slug);
   const posterUrl = getMediaPosterUrl(item.slug);
   const playerPoster = item.hasPoster ? posterUrl : undefined;
-  const statusLabel =
-    item.status === "draft"
-      ? "Brouillon"
-      : item.status === "archived"
-        ? "Archive"
-        : "Publie";
+  const statusLabel = item.status === "draft" ? "Brouillon" : item.status === "archived" ? "Archivé" : "Publié";
 
   return (
     <section className="page-section">
@@ -114,37 +219,46 @@ export function FilmDetailPage() {
             ))}
           </div>
 
+          <div className="interaction-bar">
+            <button type="button" className={`icon-btn${favorited ? " is-active" : ""}`}
+              onClick={() => void handleToggleFavorite()}>
+              {favorited ? "♥" : "♡"} Favori
+            </button>
+            <button type="button" className={`icon-btn${inWatchlist ? " is-active" : ""}`}
+              onClick={() => void handleToggleWatchlist()}>
+              {inWatchlist ? "✓" : "+"} Ma liste
+            </button>
+            <div className="rating-block">
+              <StarRating value={userRating} onChange={(v) => void handleRatingChange(v)} />
+              {avgRating && avgRating.count > 0 && (
+                <span className="avg-rating">{avgRating.average?.toFixed(1)}/5 ({avgRating.count} avis)</span>
+              )}
+            </div>
+          </div>
+
           <div className="detail-meta-grid">
             <div className="status-card">
-              <span className="status-label">Annee</span>
+              <span className="status-label">Année</span>
               <strong>{item.releaseYear ?? "Inconnue"}</strong>
-              <p>Date de sortie renseignee dans le catalogue.</p>
             </div>
-
             <div className="status-card">
-              <span className="status-label">Duree</span>
+              <span className="status-label">Durée</span>
               <strong>{item.durationMinutes ? `${item.durationMinutes} min` : "Inconnue"}</strong>
-              <p>
-                {item.hasVideo
-                  ? "Le fichier local est pret a etre diffuse via l'API."
-                  : "Ajoute un fichier video local pour activer la lecture."}
-              </p>
             </div>
-
             <div className="status-card">
               <span className="status-label">Position</span>
               <strong>#{item.stats.catalogPosition}</strong>
-              <p>{item.stats.genreCount} genre(s) associe(s) a cette fiche.</p>
+              <p>{item.stats.genreCount} genre(s)</p>
             </div>
           </div>
 
-          <div className="action-row">
-            {item.hasVideo ? null : (
-              <button type="button" className="secondary-button" disabled>
-                Video locale absente
+          {isAdmin && (
+            <div className="admin-danger-zone">
+              <button type="button" className="danger-button" onClick={() => void handleDelete()}>
+                Supprimer du catalogue
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="detail-poster">
@@ -158,11 +272,12 @@ export function FilmDetailPage() {
         </div>
       </div>
 
+      {/* Lecteur */}
       <div className="panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">Lecture</p>
-            <h3>Lecteur video integre</h3>
+            <h3>Lecteur vidéo intégré</h3>
           </div>
         </div>
 
@@ -170,45 +285,44 @@ export function FilmDetailPage() {
           <div className="media-player-section">
             <div className="media-player-shell">
               <video
+                ref={videoRef}
                 className="media-player"
                 controls
                 preload="metadata"
                 poster={playerPoster}
                 src={streamUrl}
+                onLoadedMetadata={handleLoadedMetadata}
+                onTimeUpdate={handleTimeUpdate}
+                onPause={handlePause}
+                onEnded={handleEnded}
               >
-                Votre navigateur ne supporte pas la lecture video HTML5.
+                Votre navigateur ne supporte pas la lecture vidéo HTML5.
               </video>
             </div>
-
-            <p className="muted media-player-caption">
-              Lecture locale diffusée par l&apos;API avec support du chargement progressif. Créé le{" "}
-              {new Date(item.createdAt).toLocaleDateString()} - mis a jour le{" "}
-              {new Date(item.updatedAt).toLocaleDateString()}.
-            </p>
+            {resumePosition > 0 && (
+              <p className="muted media-player-caption">
+                Reprise à {Math.floor(resumePosition / 60)}min {Math.floor(resumePosition % 60)}s
+              </p>
+            )}
           </div>
         ) : (
           <div className="empty-state">
-            <p className="muted">
-              Aucun fichier video local n&apos;est encore rattache a ce film. Ajoute un `videoPath`
-              cote backend pour activer la lecture integree ici.
-            </p>
+            <p className="muted">Aucun fichier vidéo rattaché à ce film.</p>
           </div>
         )}
       </div>
 
+      {/* Films liés */}
       <div className="panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">A voir ensuite</p>
-            <h3>Films lies</h3>
+            <p className="eyebrow">À voir ensuite</p>
+            <h3>Films liés</h3>
           </div>
         </div>
-
         {related.length > 0 ? (
           <div className="media-grid">
-            {related.map((media) => (
-              <MediaCard key={media.id} media={media} />
-            ))}
+            {related.map((media) => <MediaCard key={media.id} media={media} />)}
           </div>
         ) : (
           <div className="empty-state">

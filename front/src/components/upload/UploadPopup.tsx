@@ -196,12 +196,14 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
 
   const isPathValidationPending =
     videoPathValidation.status === "validating" || posterPathValidation.status === "validating";
+  const isRequiredUploadMissing =
+    (videoSourceMode === "upload" && !videoFile) ||
+    (posterSourceMode === "upload" && !posterFile);
   const hasInvalidReference =
     (videoSourceMode === "reference" &&
       (!videoPath.trim() || videoPathValidation.status !== "valid")) ||
     (posterSourceMode === "reference" &&
-      posterPath.trim().length > 0 &&
-      posterPathValidation.status !== "valid");
+      (!posterPath.trim() || posterPathValidation.status !== "valid"));
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -237,16 +239,24 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
       return;
     }
 
-    if (posterSourceMode === "reference" && posterPath.trim()) {
-      if (posterPathValidation.status === "validating") {
-        setError("La verification du chemin de l'affiche est encore en cours.");
-        return;
-      }
+    if (posterSourceMode === "reference" && !posterPath.trim()) {
+      setError("Le chemin local de l'affiche est obligatoire.");
+      return;
+    }
 
-      if (posterPathValidation.status !== "valid") {
-        setError("Le chemin de l'affiche est invalide.");
-        return;
-      }
+    if (posterSourceMode === "reference" && posterPathValidation.status === "validating") {
+      setError("La verification du chemin de l'affiche est encore en cours.");
+      return;
+    }
+
+    if (posterSourceMode === "reference" && posterPathValidation.status !== "valid") {
+      setError("Le chemin de l'affiche est invalide.");
+      return;
+    }
+
+    if (posterSourceMode === "upload" && !posterFile) {
+      setError("Le fichier affiche est obligatoire.");
+      return;
     }
 
     const sizeError = validateFiles();
@@ -477,7 +487,7 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
             <section className="upload-source-panel">
               <div className="upload-source-header">
                 <div>
-                  <strong>Affiche</strong>
+                  <strong>Affiche <span className="required-mark">*</span></strong>
                 </div>
                 <div className="source-mode-toggle" role="tablist" aria-label="Mode affiche">
                   <button
@@ -499,7 +509,7 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
 
               {posterSourceMode === "reference" ? (
                 <label className="upload-field">
-                  Chemin local affiche
+                  Chemin local affiche <span className="required-mark">*</span>
                   <input
                     type="text"
                     value={posterPath}
@@ -522,7 +532,7 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
                 </label>
               ) : (
                 <FileUpload
-                  label="Affiche"
+                  label="Affiche obligatoire"
                   accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,.jpg,.jpeg,.png,.gif,.webp,.svg"
                   hint={`Cliquer pour selectionner (jpeg, png, svg) - max ${UPLOAD_MAX_IMAGE_MB} Mo`}
                   file={posterFile}
@@ -545,7 +555,12 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
             <button
               type="submit"
               className="primary-button"
-              disabled={isSubmitting || isPathValidationPending || hasInvalidReference}
+              disabled={
+                isSubmitting ||
+                isPathValidationPending ||
+                hasInvalidReference ||
+                isRequiredUploadMissing
+              }
             >
               {isSubmitting ? "Validation..." : "Lancer l'upload"}
             </button>

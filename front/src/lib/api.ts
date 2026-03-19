@@ -376,3 +376,79 @@ export const createMediaWithProgress = (
     xhr.open("POST", `${UPLOAD_BASE_URL}/admin/media`);
     xhr.send(formData);
   });
+
+// ─── Interactions (favoris, watchlist, notes, playback) ─────────────────────
+
+export type MediaListItem = {
+  id: string;
+  slug: string;
+  title: string;
+  type: MediaType;
+  releaseYear: number | null;
+  durationMinutes: number | null;
+  posterPath: string | null;
+  status: string;
+};
+
+export type FavoriteItem = MediaListItem & { favoritedAt: string };
+export type WatchlistEntry = MediaListItem & { addedAt: string };
+export type HistoryEntry = MediaListItem & {
+  positionSeconds: number;
+  durationSeconds: number | null;
+  completed: boolean;
+  watchedAt: string;
+};
+
+export const toggleFavorite = (mediaId: string) =>
+  request<{ favorited: boolean }>(`/me/favorites/${mediaId}`, { method: "POST" });
+
+export const listFavorites = () =>
+  request<{ items: FavoriteItem[] }>("/me/favorites", { method: "GET" });
+
+export const getFavoriteStatus = (mediaId: string) =>
+  request<{ favorited: boolean }>(`/me/favorites/${mediaId}`, { method: "GET" });
+
+export const toggleWatchlist = (mediaId: string) =>
+  request<{ inWatchlist: boolean }>(`/me/watchlist/${mediaId}`, { method: "POST" });
+
+export const listWatchlist = () =>
+  request<{ items: WatchlistEntry[] }>("/me/watchlist", { method: "GET" });
+
+export const getWatchlistStatus = (mediaId: string) =>
+  request<{ inWatchlist: boolean }>(`/me/watchlist/${mediaId}`, { method: "GET" });
+
+export const upsertRating = (mediaId: string, value: number) =>
+  request<{ value: number }>(`/me/ratings/${mediaId}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
+  });
+
+export const deleteRating = (mediaId: string) =>
+  request<void>(`/me/ratings/${mediaId}`, { method: "DELETE" });
+
+export const getRating = (mediaId: string) =>
+  request<{ value: number | null }>(`/me/ratings/${mediaId}`, { method: "GET" });
+
+export const getMediaAverageRating = (mediaId: string) =>
+  request<{ average: number | null; count: number }>(`/me/ratings/${mediaId}/average`, {
+    method: "GET",
+  });
+
+export const savePlayback = (
+  mediaId: string,
+  positionSeconds: number,
+  durationSeconds?: number,
+) =>
+  request<void>(`/me/playback/${mediaId}`, {
+    method: "PUT",
+    body: JSON.stringify({ positionSeconds, durationSeconds }),
+  });
+
+export const getPlayback = (mediaId: string) =>
+  request<{ positionSeconds: number; durationSeconds: number | null; completed: boolean }>(
+    `/me/playback/${mediaId}`,
+    { method: "GET" },
+  );
+
+export const listHistory = () =>
+  request<{ items: HistoryEntry[] }>("/me/history", { method: "GET" });

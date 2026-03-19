@@ -12,19 +12,20 @@ export function AppLayout() {
       <aside className="app-sidebar">
         <div className="brand-block">
           <p className="eyebrow">StreamAdy</p>
-          <h1>Phase 3</h1>
+          <h1>Phase 4</h1>
           <p className="muted">
-            Catalogue avec upload admin et streaming video avec support HTTP Range.
+            Favoris, liste de lecture, notes et historique.
           </p>
         </div>
 
         <nav className="app-nav" aria-label="Navigation principale">
           {isAuthenticated ? (
             <>
-              <NavLink to="/" end>
-                Accueil
-              </NavLink>
+              <NavLink to="/" end>Accueil</NavLink>
               <NavLink to="/films">Films</NavLink>
+              <NavLink to="/favorites">Favoris</NavLink>
+              <NavLink to="/watchlist">Ma liste</NavLink>
+              <NavLink to="/history">Historique</NavLink>
               <NavLink to="/profile">Profil</NavLink>
             </>
           ) : (
@@ -56,13 +57,13 @@ export function AppLayout() {
                 onClick={() => void logout()}
                 disabled={isBusy}
               >
-                Se deconnecter
+                Se déconnecter
               </button>
             </div>
           ) : (
             <div className="account-card">
-              <p className="account-title">Acces public</p>
-              <p className="muted">Connecte-toi pour acceder aux pages protegees.</p>
+              <p className="account-title">Accès public</p>
+              <p className="muted">Connecte-toi pour accéder aux pages protégées.</p>
             </div>
           )}
         </div>
