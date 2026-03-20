@@ -22,9 +22,10 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       return createMediaWithProgress(formData, (progress) => {
         updateJob(id, { progress });
       })
-        .then(() => {
+        .then((result) => {
           updateJob(id, { progress: 100, status: "done" });
           setCatalogVersion((v) => v + 1);
+          return result;
         })
         .catch((err: unknown) => {
           const message = err instanceof Error ? err.message : "Erreur inconnue";

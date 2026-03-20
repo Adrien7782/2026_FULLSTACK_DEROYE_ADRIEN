@@ -6,12 +6,14 @@ import {
   listCatalogGenres,
   validateMediaPath,
   type CatalogGenre,
+  type CreateMediaResult,
 } from "../../lib/api";
 import { useUpload } from "../../upload/useUpload";
 import { FileUpload } from "./FileUpload";
 
 type UploadPopupProps = {
   onClose: () => void;
+  onUploaded?: (result: CreateMediaResult) => void;
 };
 
 type PathValidationState = {
@@ -24,7 +26,7 @@ const idleValidationState: PathValidationState = {
   message: "",
 };
 
-export function UploadPopup({ onClose }: UploadPopupProps) {
+export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
   const { startUpload } = useUpload();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -301,7 +303,8 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
       setIsSubmitting(true);
 
       try {
-        await startUpload(title.trim(), formData);
+        const result = await startUpload(title.trim(), formData);
+        onUploaded?.(result);
         onClose();
       } catch (submitError) {
         setError(submitError instanceof Error ? submitError.message : "Creation du media impossible.");
@@ -312,7 +315,9 @@ export function UploadPopup({ onClose }: UploadPopupProps) {
       return;
     }
 
-    void startUpload(title.trim(), formData);
+    startUpload(title.trim(), formData)
+      .then((result) => { onUploaded?.(result); })
+      .catch(() => {});
     onClose();
   };
 

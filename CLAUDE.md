@@ -122,7 +122,7 @@ Une fonctionnalite n'est pas consideree terminee si:
 Mets à jour automatiquement l'avancement à la fin du développement
 
 ## Dernière phase terminée
-Phase 4
+Phase 5
 
 ## Prochaine phase
-Phase 5
+Phase 6

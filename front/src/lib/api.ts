@@ -470,3 +470,96 @@ export const getUserPublicProfile = (username: string) =>
     `/users/by/${username}`,
     { method: "GET" },
   );
+
+// ─── Suggestions ─────────────────────────────────────────────────────────────
+
+export type SuggestionStatus = "pending" | "accepted" | "refused" | "processed";
+
+export type SuggestionItem = {
+  id: string;
+  title: string;
+  synopsis: string | null;
+  adminNote: string | null;
+  status: SuggestionStatus;
+  createdAt: string;
+  updatedAt: string;
+  media: { id: string; slug: string; title: string } | null;
+};
+
+export type AdminSuggestionItem = SuggestionItem & {
+  user: { id: string; username: string; avatarUrl: string | null };
+};
+
+export const createSuggestion = (title: string, synopsis?: string) =>
+  request<{ suggestion: SuggestionItem }>("/suggestions", {
+    method: "POST",
+    body: JSON.stringify({ title, synopsis }),
+  });
+
+export const listMySuggestions = () =>
+  request<{ items: SuggestionItem[] }>("/suggestions", { method: "GET" });
+
+export const cancelSuggestion = (id: string) =>
+  request<void>(`/suggestions/${id}`, { method: "DELETE" });
+
+export const listAdminSuggestions = (status?: string) =>
+  request<{ items: AdminSuggestionItem[] }>(
+    `/admin/suggestions${status ? `?status=${status}` : ""}`,
+    { method: "GET" },
+  );
+
+export const updateSuggestionStatus = (
+  id: string,
+  status: "accepted" | "refused" | "processed",
+  adminNote?: string,
+  mediaId?: string,
+) =>
+  request<{ suggestion: AdminSuggestionItem }>(`/admin/suggestions/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, adminNote, mediaId }),
+  });
+
+// ─── Admin users ─────────────────────────────────────────────────────────────
+
+export type AdminUser = {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  avatarUrl: string | null;
+  createdAt: string;
+  _count: { favorites: number; ratings: number; suggestions: number };
+};
+
+export const listAdminUsers = () =>
+  request<{ users: AdminUser[] }>("/admin/users", { method: "GET" });
+
+export const updateUserRole = (id: string, role: UserRole) =>
+  request<{ user: AdminUser }>(`/admin/users/${id}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+
+// ─── Admin media list ─────────────────────────────────────────────────────────
+
+export type AdminMediaItem = {
+  id: string;
+  slug: string;
+  title: string;
+  type: MediaType;
+  status: string;
+  releaseYear: number | null;
+  durationMinutes: number | null;
+  hasPoster: boolean;
+  createdAt: string;
+  _count: { favorites: number; ratings: number };
+};
+
+export const listAdminMedia = (status?: string) =>
+  request<{ items: AdminMediaItem[] }>(
+    `/admin/media${status ? `?status=${status}` : ""}`,
+    { method: "GET" },
+  );
+
+export const deleteMediaBySlug = (slug: string) =>
+  request<void>(`/admin/media/${slug}`, { method: "DELETE" });

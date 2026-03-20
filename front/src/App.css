@@ -1669,3 +1669,200 @@
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+
+/* ─── Suggestions (user) ─────────────────────────────────────────────────── */
+
+.suggestion-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+
+.sug-section { margin-top: 20px; }
+.sug-section-label {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;
+}
+.sug-list { display: flex; flex-direction: column; gap: 10px; }
+
+.sug-card {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  background: var(--card-bg); transition: border-color 0.15s;
+}
+.sug-card:hover { border-color: var(--accent); }
+
+.sug-card-top { display: flex; flex-direction: column; gap: 6px; }
+.sug-card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sug-card-title { font-size: 0.95rem; }
+.sug-card-synopsis { font-size: 0.85rem; }
+
+.sug-status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 0.75rem;
+  font-weight: 600; border: 1px solid; white-space: nowrap;
+}
+
+.sug-card-admin-note {
+  background: var(--card-bg-hover, color-mix(in srgb, var(--accent) 8%, transparent));
+  border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0;
+  padding: 8px 12px; font-size: 0.85rem;
+}
+.sug-card-media { font-size: 0.85rem; }
+.sug-media-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.sug-media-link:hover { text-decoration: underline; }
+
+.sug-card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 6px; border-top: 1px solid var(--border);
+}
+.sug-cancel-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); border-radius: 6px; padding: 4px 12px;
+  font-size: 0.78rem; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.sug-cancel-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+/* ─── Admin suggestions ──────────────────────────────────────────────────── */
+
+.admin-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0;
+  align-items: center;
+}
+.admin-filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted); font-size: 0.82rem;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.admin-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.admin-filter-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.sug-admin-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+
+.sug-admin-card {
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  background: var(--card-bg);
+}
+.sug-admin-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  background: var(--card-bg-hover, color-mix(in srgb, var(--text) 3%, transparent));
+  flex-wrap: wrap; gap: 8px;
+}
+.sug-admin-user { display: flex; align-items: center; gap: 8px; }
+.sug-admin-username { font-weight: 600; font-size: 0.88rem; color: var(--text); text-decoration: none; }
+.sug-admin-username:hover { color: var(--accent); }
+
+.sug-admin-card-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+
+.sug-admin-note-row { padding: 0 16px 12px; }
+.sug-admin-note-input {
+  width: 100%; padding: 8px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.85rem; outline: none;
+  transition: border-color 0.15s;
+}
+.sug-admin-note-input:focus { border-color: var(--accent); }
+
+.sug-admin-actions {
+  display: flex; gap: 8px; padding: 10px 16px;
+  border-top: 1px solid var(--border); flex-wrap: wrap;
+}
+.sug-action-btn {
+  padding: 6px 16px; border-radius: 6px; border: 1px solid;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.sug-action-btn.is-accept { border-color: #059669; color: #059669; background: transparent; }
+.sug-action-btn.is-accept:hover { background: #059669; color: #fff; }
+.sug-action-btn.is-refuse { border-color: #dc2626; color: #dc2626; background: transparent; }
+.sug-action-btn.is-refuse:hover { background: #dc2626; color: #fff; }
+.sug-action-btn.is-process { border-color: var(--accent); color: var(--accent); background: transparent; }
+.sug-action-btn.is-process:hover { background: var(--accent); color: #fff; }
+.sug-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Admin médias ───────────────────────────────────────────────────────── */
+
+.admin-search-wrap { flex: 1; min-width: 180px; }
+.admin-search-input {
+  width: 100%; padding: 6px 12px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.85rem; outline: none;
+  transition: border-color 0.15s;
+}
+.admin-search-input:focus { border-color: var(--accent); }
+
+.admin-media-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+.admin-media-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--card-bg);
+  transition: border-color 0.15s;
+}
+.admin-media-row:hover { border-color: var(--accent); }
+
+.admin-media-poster {
+  width: 44px; height: 64px; object-fit: cover;
+  border-radius: 5px; flex-shrink: 0;
+  border: 1px solid var(--border); background: var(--card-bg);
+}
+.admin-media-poster.is-fallback {
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem; color: var(--accent);
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 12%, transparent));
+}
+
+.admin-media-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.admin-media-title {
+  font-weight: 600; font-size: 0.92rem; color: var(--text);
+  text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.admin-media-title:hover { color: var(--accent); }
+.admin-media-meta {
+  display: flex; gap: 10px; font-size: 0.78rem; color: var(--text-muted);
+}
+
+.required { color: #dc2626; }
+.optional { color: var(--text-muted); font-size: 0.82rem; font-weight: 400; }
+
+/* ── Modal overlay (refus suggestion, etc.) ─────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 28px 24px; width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.modal-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 1rem; padding: 4px 8px;
+  border-radius: 6px; transition: background 0.15s;
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+/* ── Suggestion form panel (redesign) ───────────────────────────────────── */
+.sug-form-panel { display: flex; flex-direction: column; gap: 24px; }
+.sug-form-intro { display: flex; gap: 18px; align-items: flex-start; }
+.sug-form-icon {
+  font-size: 2.2rem; line-height: 1;
+  width: 56px; height: 56px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 12%, transparent));
+  flex-shrink: 0;
+}
+.sug-form { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Admin suggestion note display ─────────────────────────────────────── */
+.sug-admin-note-display {
+  margin-top: 10px; padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
+}
+.sug-admin-note-display p { font-size: 0.86rem; margin: 0; color: var(--text); }

@@ -2,6 +2,10 @@ import { createBrowserRouter } from "react-router-dom";
 import { PublicOnlyRoute } from "../auth/PublicOnlyRoute";
 import { RequireAuth } from "../auth/RequireAuth";
 import { AppLayout } from "../layouts/AppLayout";
+import { AdminMediaPage } from "../pages/AdminMediaPage";
+import { AdminPage } from "../pages/AdminPage";
+import { AdminSuggestionsPage } from "../pages/AdminSuggestionsPage";
+import { AdminUsersPage } from "../pages/AdminUsersPage";
 import { FavoritesPage } from "../pages/FavoritesPage";
 import { FilmDetailPage } from "../pages/FilmDetailPage";
 import { FilmsPage } from "../pages/FilmsPage";
@@ -11,6 +15,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { SuggestionsPage } from "../pages/SuggestionsPage";
 import { UserProfilePage } from "../pages/UserProfilePage";
 import { WatchlistPage } from "../pages/WatchlistPage";
 
@@ -50,6 +55,26 @@ export const appRouter = createBrowserRouter([
       {
         path: "users/:username",
         element: <RequireAuth><UserProfilePage /></RequireAuth>,
+      },
+      {
+        path: "suggestions",
+        element: <RequireAuth><SuggestionsPage /></RequireAuth>,
+      },
+      {
+        path: "admin",
+        element: <RequireAuth><AdminPage /></RequireAuth>,
+      },
+      {
+        path: "admin/suggestions",
+        element: <RequireAuth><AdminSuggestionsPage /></RequireAuth>,
+      },
+      {
+        path: "admin/users",
+        element: <RequireAuth><AdminUsersPage /></RequireAuth>,
+      },
+      {
+        path: "admin/media",
+        element: <RequireAuth><AdminMediaPage /></RequireAuth>,
       },
       {
         path: "login",

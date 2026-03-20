@@ -1,6 +1,7 @@
 import { unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { Router } from "express";
+import { z } from "zod";
 import { ApiError } from "../../lib/errors.js";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
@@ -12,6 +13,10 @@ import {
 } from "../media/media.upload.js";
 import { createMediaBodySchema } from "../media/media.schemas.js";
 import { createMedia } from "../media/media.service.js";
+import {
+  listAllSuggestions,
+  updateSuggestionStatus,
+} from "../suggestions/suggestions.service.js";
 
 export const adminRouter = Router();
 
@@ -144,6 +149,73 @@ adminRouter.post(
     }
   },
 );
+
+// ─── Suggestions ─────────────────────────────────────────────────────────────
+
+adminRouter.get("/suggestions", async (req, res) => {
+  const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const items = await listAllSuggestions(status);
+  res.json({ items });
+});
+
+adminRouter.patch("/suggestions/:id", async (req, res) => {
+  const { id } = req.params;
+  const body = z.object({
+    status: z.enum(["accepted", "refused", "processed"]),
+    adminNote: z.string().trim().max(1000).optional(),
+    mediaId: z.string().uuid().optional(),
+  }).parse(req.body);
+  const suggestion = await updateSuggestionStatus(id, body.status, body.adminNote, body.mediaId);
+  res.json({ suggestion });
+});
+
+// ─── Utilisateurs ────────────────────────────────────────────────────────────
+
+adminRouter.get("/users", async (_req, res) => {
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, username: true, email: true, role: true,
+      avatarUrl: true, createdAt: true,
+      _count: { select: { favorites: true, ratings: true, suggestions: true } },
+    },
+  });
+  res.json({ users });
+});
+
+adminRouter.patch("/users/:id/role", async (req, res) => {
+  const { id } = req.params;
+  const { role } = z.object({ role: z.enum(["standard", "admin"]) }).parse(req.body);
+  if (id === req.auth!.user.id) throw new ApiError(400, "Tu ne peux pas modifier ton propre rôle");
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new ApiError(404, "Utilisateur introuvable");
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { role },
+    select: { id: true, username: true, email: true, role: true, avatarUrl: true, createdAt: true },
+  });
+  res.json({ user: updated });
+});
+
+// ─── Médias (liste admin complète) ───────────────────────────────────────────
+
+adminRouter.get("/media", async (req, res) => {
+  const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const medias = await prisma.media.findMany({
+    where: status ? { status: status as never } : undefined,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, slug: true, title: true, type: true, status: true,
+      releaseYear: true, durationMinutes: true, posterPath: true, createdAt: true,
+      _count: { select: { favorites: true, ratings: true } },
+    },
+  });
+  res.json({
+    items: medias.map((m) => ({ ...m, hasPoster: !!m.posterPath, posterPath: undefined })),
+  });
+});
+
+// ─── Suppression média ────────────────────────────────────────────────────────
 
 adminRouter.delete("/media/:slug", async (req, res) => {
   const { slug } = req.params;

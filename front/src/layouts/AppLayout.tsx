@@ -12,9 +12,9 @@ export function AppLayout() {
       <aside className="app-sidebar">
         <div className="brand-block">
           <p className="eyebrow">StreamAdy</p>
-          <h1>Phase 4</h1>
+          <h1>Phase 5</h1>
           <p className="muted">
-            Favoris, liste de lecture, notes et historique.
+            Suggestions et administration.
           </p>
         </div>
 
@@ -26,7 +26,16 @@ export function AppLayout() {
               <NavLink to="/favorites">Favoris</NavLink>
               <NavLink to="/watchlist">Ma liste</NavLink>
               <NavLink to="/history">Historique</NavLink>
+              <NavLink to="/suggestions">Suggestions</NavLink>
               <NavLink to="/profile">Profil</NavLink>
+              {user?.role === "admin" && (
+                <>
+                  <span className="nav-section-label">Administration</span>
+                  <NavLink to="/admin/suggestions">Suggestions</NavLink>
+                  <NavLink to="/admin/users">Utilisateurs</NavLink>
+                  <NavLink to="/admin/media">Médias</NavLink>
+                </>
+              )}
             </>
           ) : (
             <>
