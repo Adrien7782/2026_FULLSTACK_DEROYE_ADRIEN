@@ -11,6 +11,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { UserProfilePage } from "../pages/UserProfilePage";
 import { WatchlistPage } from "../pages/WatchlistPage";
 
 export const appRouter = createBrowserRouter([
@@ -45,6 +46,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "history",
         element: <RequireAuth><HistoryPage /></RequireAuth>,
+      },
+      {
+        path: "users/:username",
+        element: <RequireAuth><UserProfilePage /></RequireAuth>,
       },
       {
         path: "login",

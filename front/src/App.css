@@ -1411,6 +1411,101 @@
   gap: 10px;
 }
 
+/* ─── Panel avis utilisateurs ─────────────────────────────────────────────── */
+
+.rating-count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.ratings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+.rating-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  min-width: 140px;
+  transition: color 0.15s;
+}
+
+.rating-user:hover { color: var(--accent); }
+
+.rating-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 15%, transparent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.rating-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.rating-username {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rating-stars { display: flex; gap: 2px; }
+
+.rating-stars .star { font-size: 1rem; color: var(--border); }
+.rating-stars .star.is-active { color: #f59e0b; }
+
+.rating-date { font-size: 0.8rem; margin-left: auto; }
+
+/* ─── Profil public ────────────────────────────────────────────────────────── */
+
+.public-profile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+
+.public-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 15%, transparent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--accent);
+  border: 2px solid var(--border);
+}
+
+.public-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
 .star-rating {
   display: flex;
   align-items: center;

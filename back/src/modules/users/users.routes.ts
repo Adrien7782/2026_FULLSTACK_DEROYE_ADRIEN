@@ -7,6 +7,17 @@ import { getAuthContext, publicUserSelect } from "../auth/auth.service.js";
 
 export const usersRouter = Router();
 
+// Profil public — accessible sans authentification
+usersRouter.get("/by/:username", async (req, res) => {
+  const { username } = req.params;
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, username: true, avatarUrl: true, createdAt: true },
+  });
+  if (!user) throw new ApiError(404, "Utilisateur introuvable");
+  res.json({ user });
+});
+
 usersRouter.use(requireAuth);
 
 usersRouter.get("/", (_req, res) => {

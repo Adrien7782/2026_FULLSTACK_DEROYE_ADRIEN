@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { listMediaRatings } from "../interactions/interactions.service.js";
 import {
   getCatalogHome,
   getMediaDetail,
@@ -42,6 +43,12 @@ mediaRouter.get("/:slug/poster", async (req, res) => {
 mediaRouter.get("/:slug/stream", async (req, res) => {
   const params = mediaSlugParamsSchema.parse(req.params);
   await sendVideoStream(params.slug, req, res, req.auth?.user.role);
+});
+
+mediaRouter.get("/:slug/ratings", async (req, res) => {
+  const { slug } = mediaSlugParamsSchema.parse(req.params);
+  const ratings = await listMediaRatings(slug);
+  res.json({ ratings });
 });
 
 mediaRouter.get("/:slug", async (req, res) => {

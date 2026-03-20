@@ -7,6 +7,7 @@ import {
   getMediaAverageRating,
   getMediaDetail,
   getMediaPosterUrl,
+  getMediaRatings,
   getMediaStreamUrl,
   getPlayback,
   getRating,
@@ -17,6 +18,7 @@ import {
   toggleWatchlist,
   upsertRating,
   type MediaDetailResponse,
+  type MediaRatingEntry,
 } from "../lib/api";
 
 const deleteMediaFromCatalog = (slug: string) =>
@@ -59,6 +61,7 @@ export function FilmDetailPage() {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<{ average: number | null; count: number } | null>(null);
+  const [ratings, setRatings] = useState<MediaRatingEntry[]>([]);
   const [resumePosition, setResumePosition] = useState(0);
 
   // Refs stables pour les handlers vidéo (évite les stale closures)
@@ -77,12 +80,13 @@ export function FilmDetailPage() {
         setDetail(payload);
         mediaIdRef.current = payload.item.id;
 
-        const [fav, wl, rating, avg, playback] = await Promise.allSettled([
+        const [fav, wl, rating, avg, playback, ratingsRes] = await Promise.allSettled([
           getFavoriteStatus(payload.item.id),
           getWatchlistStatus(payload.item.id),
           getRating(payload.item.id),
           getMediaAverageRating(payload.item.id),
           getPlayback(payload.item.id),
+          getMediaRatings(slug!),
         ]);
         if (!isMounted) return;
         if (fav.status === "fulfilled") setFavorited(fav.value.favorited);
@@ -91,6 +95,7 @@ export function FilmDetailPage() {
         if (avg.status === "fulfilled") setAvgRating(avg.value);
         if (playback.status === "fulfilled" && !playback.value.completed && playback.value.positionSeconds > 5)
           setResumePosition(playback.value.positionSeconds);
+        if (ratingsRes.status === "fulfilled") setRatings(ratingsRes.value.ratings);
       } catch (e) {
         if (isMounted) setError(e instanceof Error ? e.message : "Erreur de chargement");
       } finally {
@@ -170,7 +175,12 @@ export function FilmDetailPage() {
     if (!detail) return;
     if (value === null) { await deleteRating(detail.item.id); setUserRating(null); }
     else { await upsertRating(detail.item.id, value); setUserRating(value); }
-    setAvgRating(await getMediaAverageRating(detail.item.id));
+    const [avg, ratingsRes] = await Promise.all([
+      getMediaAverageRating(detail.item.id),
+      getMediaRatings(detail.item.slug),
+    ]);
+    setAvgRating(avg);
+    setRatings(ratingsRes.ratings);
   };
 
   // ─── Rendu ──────────────────────────────────────────────────────────────────
@@ -312,6 +322,44 @@ export function FilmDetailPage() {
         )}
       </div>
 
+      {/* Avis des utilisateurs */}
+      <div className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Communauté</p>
+            <h3>Avis des utilisateurs {ratings.length > 0 && <span className="rating-count">({ratings.length})</span>}</h3>
+          </div>
+        </div>
+        {ratings.length === 0 ? (
+          <div className="empty-state">
+            <p className="muted">Aucun avis pour le moment. Sois le premier à noter ce film !</p>
+          </div>
+        ) : (
+          <div className="ratings-list">
+            {ratings.map((r) => (
+              <div key={r.userId} className="rating-row">
+                <Link to={`/users/${r.username}`} className="rating-user">
+                  <div className="rating-avatar">
+                    {r.avatarUrl
+                      ? <img src={r.avatarUrl} alt={r.username} />
+                      : <span>{r.username.charAt(0).toUpperCase()}</span>}
+                  </div>
+                  <span className="rating-username">{r.username}</span>
+                </Link>
+                <div className="rating-stars">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} className={s <= r.value ? "star is-active" : "star"}>★</span>
+                  ))}
+                </div>
+                <span className="rating-date muted">
+                  {new Date(r.updatedAt).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Films liés */}
       <div className="panel">
         <div className="section-header">
@@ -330,6 +378,8 @@ export function FilmDetailPage() {
           </div>
         )}
       </div>
+
+      
     </section>
   );
 }

@@ -453,3 +453,20 @@ export const getPlayback = (mediaId: string) =>
 
 export const listHistory = () =>
   request<{ items: HistoryEntry[] }>("/me/history", { method: "GET" });
+
+export type MediaRatingEntry = {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  value: number;
+  updatedAt: string;
+};
+
+export const getMediaRatings = (slug: string) =>
+  request<{ ratings: MediaRatingEntry[] }>(`/media/${slug}/ratings`, { method: "GET" });
+
+export const getUserPublicProfile = (username: string) =>
+  request<{ user: { id: string; username: string; avatarUrl: string | null; createdAt: string } }>(
+    `/users/by/${username}`,
+    { method: "GET" },
+  );

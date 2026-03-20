@@ -96,6 +96,23 @@ export const getRating = async (userId: string, mediaId: string) => {
   return { value: row?.value ?? null };
 };
 
+export const listMediaRatings = async (mediaSlug: string) => {
+  const rows = await prisma.rating.findMany({
+    where: { media: { slug: mediaSlug } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, username: true, avatarUrl: true } },
+    },
+  });
+  return rows.map((r) => ({
+    userId: r.user.id,
+    username: r.user.username,
+    avatarUrl: r.user.avatarUrl ?? null,
+    value: r.value,
+    updatedAt: r.updatedAt,
+  }));
+};
+
 export const getMediaAverageRating = async (mediaId: string) => {
   const result = await prisma.rating.aggregate({
     where: { mediaId },
