@@ -142,7 +142,14 @@ export const listHistory = async (userId: string) => {
     },
   });
   return rows.map((r) => ({
-    ...r.media,
+    id: r.media.id,
+    slug: r.media.slug,
+    title: r.media.title,
+    type: r.media.type,
+    releaseYear: r.media.releaseYear,
+    durationMinutes: r.media.durationMinutes,
+    status: r.media.status,
+    hasPoster: !!r.media.posterPath,
     positionSeconds: r.positionSeconds,
     durationSeconds: r.durationSeconds,
     completed: r.completed,

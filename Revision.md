@@ -16,7 +16,7 @@ Fonction qui intervient entre la réception de la requête et le renvoie de la r
 
 Helmet ? Permet de sécuriser les API 
 
-API : CRUD Create (POST) Read (GET) Update (PUT) Delete (DELETE)
+API (Application Programming Interface): CRUD Create (POST) Read (GET) Update (PUT) Delete (DELETE)
 
 React c'est un SPA Single Page Application la plupart du temps, Une possibilité d’accès à des informations distantes
 

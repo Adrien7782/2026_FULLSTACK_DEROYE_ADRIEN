@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listHistory, type HistoryEntry } from "../lib/api";
+import { getMediaPosterUrl, listHistory, type HistoryEntry } from "../lib/api";
 
 function ProgressBar({ position, duration }: { position: number; duration: number | null }) {
   if (!duration || duration === 0) return null;
@@ -18,6 +18,23 @@ function formatDuration(seconds: number) {
   const s = Math.floor(seconds % 60);
   if (h > 0) return `${h}h ${m}min`;
   return `${m}min ${s}s`;
+}
+
+function HistoryPoster({ item }: { item: HistoryEntry }) {
+  const [failed, setFailed] = useState(false);
+  if (!item.hasPoster || failed) {
+    const initials = item.title.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "").join("");
+    return <div className="history-card-poster is-fallback"><span>{initials}</span></div>;
+  }
+  return (
+    <img
+      className="history-card-poster"
+      src={getMediaPosterUrl(item.slug)}
+      alt={`Affiche de ${item.title}`}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export function HistoryPage() {
@@ -41,24 +58,21 @@ export function HistoryPage() {
         <p className="eyebrow">Fonctionnement</p>
         <h2>Votre historique</h2>
         <p className="muted">
-          Ta progression est sauvegardée automatiquement pendant la lecture (toutes les 10 secondes,
-          à chaque pause et à chaque fois que tu quittes la fiche film). Un film apparaît ici dès
-          que tu as visionné au moins 2 secondes. Il passe en <strong>Terminé</strong> quand tu as
-          regardé 90 % ou plus.
+          Ta progression est sauvegardée automatiquement (toutes les 10 secondes, à la pause et en
+          quittant la fiche). Un film apparaît ici dès 1 seconde visionnée. Il passe en{" "}
+          <strong>Terminé</strong> à 90 % de lecture. Les films restent dans l&apos;historique
+          indéfiniment.
         </p>
       </div>
 
       {inProgress.length > 0 && (
         <div className="panel">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">En cours</p>
-              <h2>Reprendre la lecture</h2>
-            </div>
-          </div>
+          <p className="eyebrow">En cours</p>
+          <h2>Reprendre la lecture</h2>
           <div className="history-list">
             {inProgress.map((item) => (
               <Link key={item.id} to={`/films/${item.slug}`} className="history-card">
+                <HistoryPoster item={item} />
                 <div className="history-card-info">
                   <strong>{item.title}</strong>
                   <span className="muted">
@@ -74,12 +88,8 @@ export function HistoryPage() {
       )}
 
       <div className="panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Historique</p>
-            <h2>Films regardés</h2>
-          </div>
-        </div>
+        <p className="eyebrow">Historique</p>
+        <h2>Films regardés</h2>
 
         {isLoading && <p className="muted">Chargement…</p>}
         {error && <p className="form-error">{error}</p>}
@@ -95,6 +105,7 @@ export function HistoryPage() {
           <div className="history-list">
             {completed.map((item) => (
               <Link key={item.id} to={`/films/${item.slug}`} className="history-card">
+                <HistoryPoster item={item} />
                 <div className="history-card-info">
                   <strong>{item.title}</strong>
                   <span className="muted">

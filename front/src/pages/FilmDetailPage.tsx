@@ -89,7 +89,7 @@ export function FilmDetailPage() {
         if (wl.status === "fulfilled") setInWatchlist(wl.value.inWatchlist);
         if (rating.status === "fulfilled") setUserRating(rating.value.value);
         if (avg.status === "fulfilled") setAvgRating(avg.value);
-        if (playback.status === "fulfilled" && playback.value.positionSeconds > 5)
+        if (playback.status === "fulfilled" && !playback.value.completed && playback.value.positionSeconds > 5)
           setResumePosition(playback.value.positionSeconds);
       } catch (e) {
         if (isMounted) setError(e instanceof Error ? e.message : "Erreur de chargement");

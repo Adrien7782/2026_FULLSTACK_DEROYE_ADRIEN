@@ -393,6 +393,7 @@ export type MediaListItem = {
 export type FavoriteItem = MediaListItem & { favoritedAt: string };
 export type WatchlistEntry = MediaListItem & { addedAt: string };
 export type HistoryEntry = MediaListItem & {
+  hasPoster: boolean;
   positionSeconds: number;
   durationSeconds: number | null;
   completed: boolean;

@@ -1497,6 +1497,26 @@
   text-overflow: ellipsis;
 }
 
+.history-card-poster {
+  width: 54px;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+.history-card-poster.is-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  background: var(--accent-muted, color-mix(in srgb, var(--accent) 12%, transparent));
+}
+
 .history-card-cta {
   font-size: 0.8rem;
   color: var(--accent);
