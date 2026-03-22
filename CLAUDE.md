@@ -122,7 +122,7 @@ Une fonctionnalite n'est pas consideree terminee si:
 Mets à jour automatiquement l'avancement à la fin du développement
 
 ## Dernière phase terminée
-Phase 5
+Phase 6 (V1 complète — Sprints 6.1 et 6.2)
 
 ## Prochaine phase
-Phase 6
+Phase 7 — V2 séries et notifications (Sprint 7.1)

@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: streamady
+      POSTGRES_PASSWORD: streamady_password
+      POSTGRES_DB: streamady
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streamady -d streamady"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://streamady:streamady_password@db:5432/streamady?schema=public
+      FRONTEND_URL: http://localhost:80
+      DATA_DIRECTORY: /app/data
+      SESSION_COOKIE_NAME: streamady_session
+      SESSION_COOKIE_SECURE: "false"
+      SESSION_TTL_DAYS: "7"
+      BCRYPT_ROUNDS: "12"
+      RATE_LIMIT_WINDOW_MS: "900000"
+      RATE_LIMIT_MAX: "120"
+      AUTH_RATE_LIMIT_MAX: "10"
+      LOG_LEVEL: info
+      UPLOAD_MAX_VIDEO_MB: "15360"
+      UPLOAD_MAX_IMAGE_MB: "10"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./back/data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+
+volumes:
+  db_data:

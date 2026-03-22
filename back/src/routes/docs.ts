@@ -1,4 +1,5 @@
 import { Router } from "express";
+import swaggerUi from "swagger-ui-express";
 import { openApiDocument } from "../docs/openapi.js";
 
 export const docsRouter = Router();
@@ -6,6 +7,12 @@ export const docsRouter = Router();
 docsRouter.get("/docs/openapi.json", (_req, res) => {
   res.status(200).json(openApiDocument);
 });
+
+docsRouter.use("/docs/ui", swaggerUi.serve);
+docsRouter.get("/docs/ui", swaggerUi.setup(openApiDocument, {
+  customSiteTitle: "StreamAdy API",
+  customCss: ".swagger-ui .topbar { display: none }",
+}));
 
 docsRouter.get("/docs", (_req, res) => {
   const pathEntries = Object.entries(openApiDocument.paths)
@@ -106,6 +113,7 @@ docsRouter.get("/docs", (_req, res) => {
             <h2>Available Paths</h2>
             <ul>${pathEntries}</ul>
             <div class="link-row">
+              <a href="/docs/ui">Swagger UI</a>
               <a href="/docs/openapi.json">OpenAPI JSON</a>
               <a href="/health">Health Check</a>
             </div>

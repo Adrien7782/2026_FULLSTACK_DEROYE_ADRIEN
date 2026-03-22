@@ -1,23 +1,17 @@
 # 2026_FULLSTACK_DEROYE_ADRIEN
 
-## Etat actuel
+## Etat actuel — V1 (Phase 6)
 
-Le projet couvre maintenant la phase 0, la phase 1 et la phase 2:
-
-- PostgreSQL dans Docker
-- Prisma et migrations
-- backend Express + Prisma + OpenAPI
-- frontend React + Vite + React Router + theme
-- communication front/back
-- dockerisation de `db`, `backend` et `frontend`
-- authentification `username/password`
-- sessions persistantes en base avec cookie HTTP-only
-- profil utilisateur (`GET /api/users/me`, `PATCH /api/users/me`)
-- `logout` et `logout-all`
-- catalogue `Media + Genre`
-- stockage local des assets media via `DATA_DIRECTORY`
-- accueil catalogue, page `Films`, recherche, filtre par genre
-- pagination par curseur et fiche detail film
+- PostgreSQL dans Docker, Prisma, migrations, seed
+- Backend Express + Prisma + OpenAPI (Swagger UI sur `/docs/ui`)
+- Frontend React + Vite + React Router + theme clair/sombre
+- Dockerisation complete : `db`, `backend`, `frontend`
+- **Phase 1** — Authentification `username/password`, sessions cookie HTTP-only, profil, `logout` / `logout-all`
+- **Phase 2** — Catalogue `Media + Genre`, accueil, page Films, recherche, filtre, pagination curseur, fiche detail
+- **Phase 3** — Upload admin (video + affiche, multipart), streaming HTTP Range, suivi de progression
+- **Phase 4** — Favoris, watchlist, notes (1..5), historique, reprise de lecture
+- **Phase 5** — Suggestions (workflow `pending → accepted/refused → processed`), administration (utilisateurs, medias)
+- **Phase 6** — Swagger UI integre, tests backend et frontend, gestion d'erreurs globale, Docker Compose finalise
 
 ## Variables d'environnement
 
@@ -38,7 +32,9 @@ Des fichiers d'exemple sont fournis:
 - `cd back`
 - `npm run dev`
 - API disponible sur `http://localhost:3000`
-- Docs OpenAPI disponibles sur `http://localhost:3000/docs`
+- Docs OpenAPI (liste HTML) disponibles sur `http://localhost:3000/docs`
+- **Swagger UI interactif disponible sur `http://localhost:3000/docs/ui`**
+- JSON OpenAPI brut disponible sur `http://localhost:3000/docs/openapi.json`
 - Routes phase 1 disponibles sous `http://localhost:3000/api/auth` et `http://localhost:3000/api/users`
 - Routes phase 2 disponibles sous `http://localhost:3000/api/media`
 
@@ -76,19 +72,61 @@ Si tu veux lire des videos stockees ailleurs sur ton PC plus tard, il faudra cha
 
 ## Lancement dockerise
 
-### Backend
+### Prerequis
 
-- `docker compose up -d --build backend`
-- le conteneur applique `prisma migrate deploy` avant de demarrer le serveur
+- Docker Desktop installe et demarrant
+- Ports `80`, `3000` et `5433` libres sur la machine
 
-### Frontend
+### Premier lancement (installation propre)
 
-- `docker compose up -d --build frontend`
-- Nginx proxy automatiquement `/api`, `/health` et `/docs` vers le conteneur `backend`
+```bash
+# Depuis la racine du projet
+docker compose up -d --build
+```
 
-### Stack complete
+Le compose demarre automatiquement dans le bon ordre : `db` → `backend` (migration Prisma incluse) → `frontend`.
 
-- `docker compose up -d --build db backend frontend`
+- Frontend : `http://localhost:80`
+- API : `http://localhost:3000`
+- Swagger UI : `http://localhost:3000/docs/ui`
+
+### Demarrage habituel (sans rebuild)
+
+```bash
+docker compose up -d
+```
+
+### Arrêt
+
+```bash
+docker compose down
+```
+
+### Arrêt et suppression des donnees
+
+```bash
+docker compose down -v
+```
+
+### Rebuild d'un seul service
+
+```bash
+docker compose up -d --build backend
+docker compose up -d --build frontend
+```
+
+### Stack complete (ancienne commande equivalente)
+
+```bash
+docker compose up -d --build db backend frontend
+```
+
+### Notes
+
+- Le backend applique `prisma migrate deploy` automatiquement au demarrage du conteneur.
+- Les fichiers media (videos, affiches) sont persistes dans `back/data` sur la machine hote, montes dans le conteneur backend via un volume.
+- La base de donnees est stockee dans le volume Docker `db_data`. Elle survit aux arrets mais est supprimee avec `docker compose down -v`.
+- `SESSION_COOKIE_SECURE=false` doit rester tant que la stack tourne en HTTP sans reverse proxy TLS.
 
 ## Prisma
 
@@ -120,6 +158,7 @@ Si tu veux lire des videos stockees ailleurs sur ton PC plus tard, il faudra cha
 - `npm run typecheck`
 - `http://localhost:3000/health`
 - `http://localhost:3000/docs`
+- `http://localhost:3000/docs/ui` (Swagger UI interactif)
 
 ### Frontend
 

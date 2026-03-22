@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(npx tsx:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -v \"//\\\\|^\\\\s*//\")",
+      "Bash(python3 -c \":*)",
+      "Bash(npm test:*)",
+      "Bash(xargs grep:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker start:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(docker compose:*)"
     ]
   }
 }
