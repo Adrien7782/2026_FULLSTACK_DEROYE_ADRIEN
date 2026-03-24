@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useSession } from "../auth/useSession";
 import { GlobalUploadIndicator } from "../components/upload/GlobalUploadIndicator";
+import { SeriesCreatePopup } from "../components/upload/SeriesCreatePopup";
 import { UploadPopup } from "../components/upload/UploadPopup";
 import {
   deleteMediaBySlug,
@@ -62,6 +63,7 @@ export function AdminMediaPage() {
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isSeriesPopupOpen, setIsSeriesPopupOpen] = useState(false);
 
   if (user?.role !== "admin") return <Navigate to="/" replace />;
 
@@ -102,9 +104,14 @@ export function AdminMediaPage() {
             <h2>Gestion des médias</h2>
             <p className="muted">{allItems.length} média{allItems.length !== 1 ? "s" : ""} au total</p>
           </div>
-          <button type="button" className="primary-button" onClick={() => setIsPopupOpen(true)}>
-            + Ajouter un film
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="secondary-button" onClick={() => setIsSeriesPopupOpen(true)}>
+              + Série
+            </button>
+            <button type="button" className="primary-button" onClick={() => setIsPopupOpen(true)}>
+              + Film
+            </button>
+          </div>
         </div>
 
         {/* Filtres + recherche */}
@@ -179,6 +186,12 @@ export function AdminMediaPage() {
       </div>
 
       {isPopupOpen && <UploadPopup onClose={() => setIsPopupOpen(false)} />}
+      {isSeriesPopupOpen && (
+        <SeriesCreatePopup
+          onClose={() => setIsSeriesPopupOpen(false)}
+          onCreated={() => load(filter)}
+        />
+      )}
       <GlobalUploadIndicator />
     </section>
   );

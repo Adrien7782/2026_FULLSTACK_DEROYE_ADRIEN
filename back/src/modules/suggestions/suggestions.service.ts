@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../lib/errors.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 export const cancelSuggestion = async (userId: string, id: string) => {
   const row = await prisma.suggestion.findUnique({ where: { id } });
@@ -43,7 +44,8 @@ export const updateSuggestionStatus = async (
 ) => {
   const suggestion = await prisma.suggestion.findUnique({ where: { id } });
   if (!suggestion) throw new ApiError(404, "Suggestion introuvable");
-  return prisma.suggestion.update({
+
+  const updated = await prisma.suggestion.update({
     where: { id },
     data: { status, adminNote, mediaId: mediaId ?? suggestion.mediaId },
     include: {
@@ -51,4 +53,34 @@ export const updateSuggestionStatus = async (
       media: { select: { id: true, slug: true, title: true } },
     },
   });
+
+  // Auto-notification vers l'auteur de la suggestion
+  if (status === "accepted") {
+    await createNotification(
+      suggestion.userId,
+      "suggestion_accepted",
+      "Suggestion acceptée",
+      adminNote ?? "Votre suggestion a été acceptée.",
+      "/suggestions",
+    ).catch(() => {});
+  } else if (status === "refused") {
+    await createNotification(
+      suggestion.userId,
+      "suggestion_refused",
+      "Suggestion refusée",
+      adminNote ?? "Votre suggestion a été refusée.",
+      "/suggestions",
+    ).catch(() => {});
+  } else if (status === "processed") {
+    const mediaLink = updated.media ? `/films/${updated.media.slug}` : "/suggestions";
+    await createNotification(
+      suggestion.userId,
+      "suggestion_processed",
+      "Suggestion traitée",
+      adminNote ?? `Votre demande a été traitée${updated.media ? ` — ${updated.media.title} est disponible dans le catalogue.` : "."}`,
+      mediaLink,
+    ).catch(() => {});
+  }
+
+  return updated;
 };

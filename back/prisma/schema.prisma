@@ -36,6 +36,13 @@ enum SuggestionStatus {
   processed
 }
 
+enum NotificationType {
+  suggestion_accepted
+  suggestion_refused
+  suggestion_processed
+  new_episode
+}
+
 model User {
   id             String    @id @default(uuid())
   username       String    @unique
@@ -54,6 +61,8 @@ model User {
   ratings          Rating[]
   playbackProgress PlaybackProgress[]
   suggestions      Suggestion[]
+  notifications    Notification[]
+  episodeProgress  EpisodePlaybackProgress[]
 }
 
 model Session {
@@ -93,6 +102,7 @@ model Media {
   ratings          Rating[]
   playbackProgress PlaybackProgress[]
   suggestions      Suggestion[]
+  serie            Serie?
 
   @@index([type, status, catalogIndex])
 }
@@ -175,4 +185,77 @@ model Suggestion {
 
   @@index([userId])
   @@index([status])
+}
+
+model Serie {
+  id        String   @id @default(uuid())
+  mediaId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  seasons   Season[]
+}
+
+model Season {
+  id        String    @id @default(uuid())
+  serieId   String
+  number    Int
+  title     String?
+  synopsis  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  serie     Serie     @relation(fields: [serieId], references: [id], onDelete: Cascade)
+  episodes  Episode[]
+
+  @@unique([serieId, number])
+  @@index([serieId])
+}
+
+model Episode {
+  id              String                    @id @default(uuid())
+  seasonId        String
+  number          Int
+  title           String
+  synopsis        String?
+  durationMinutes Int?
+  videoPath       String?
+  status          MediaStatus               @default(published)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  season          Season                    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  playbackProgress EpisodePlaybackProgress[]
+
+  @@unique([seasonId, number])
+  @@index([seasonId])
+}
+
+model EpisodePlaybackProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  episodeId       String
+  positionSeconds Float    @default(0)
+  durationSeconds Float?
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode         Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, episodeId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }

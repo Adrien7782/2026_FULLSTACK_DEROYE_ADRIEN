@@ -12,7 +12,21 @@
       "Bash(docker exec:*)",
       "Bash(docker cp:*)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(sed 's/className=//g')",
+      "Bash(sed 's/\"\"\"\"//g')",
+      "Bash(sed 's/\\\\s*//g')",
+      "Bash(npx vite:*)",
+      "Bash(2)",
+      "Bash(npx tsx -e \":*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(npx tsx --env-file=.env -e \":*)",
+      "Bash(DATABASE_URL=\"postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public\" npx tsx prisma/seed.ts)",
+      "Bash(PGPASSWORD=streamady_password psql -h localhost -p 5434 -U streamady -d streamady -c \"SELECT slug, title, type, status FROM \"\"Media\"\" WHERE type=''series'';\")",
+      "Bash(DATABASE_URL=\"postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public\" npx tsx -e \":*)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

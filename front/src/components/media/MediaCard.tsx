@@ -28,7 +28,7 @@ export function MediaCard({ media }: MediaCardProps) {
 
   return (
     <article className="media-card">
-      <Link className="media-card-link" to={`/films/${media.slug}`}>
+      <Link className="media-card-link" to={`/${media.type === "series" ? "series" : "films"}/${media.slug}`}>
         <div className="media-card-visual">
           {media.hasPoster ? (
             <img

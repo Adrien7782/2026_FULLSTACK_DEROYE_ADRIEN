@@ -78,6 +78,87 @@ const films = [
   },
 ];
 
+const series = [
+  {
+    slug: "arcadia",
+    title: "Arcadia",
+    synopsis:
+      "Dans une cite futuriste gouvernee par une IA toute-puissante, un groupe de rebelles tente de recuperer le libre arbitre humain avant que la memoire collective ne soit effacee.",
+    releaseYear: 2022,
+    genres: ["science-fiction", "thriller", "drame"],
+    seasons: [
+      {
+        number: 1,
+        title: "L'Eveil",
+        synopsis: "Les protagonistes decouvrent l'existence du projet Arcadia.",
+        episodes: [
+          { number: 1, title: "Memoire zero", durationMinutes: 48 },
+          { number: 2, title: "Le signal perdu", durationMinutes: 52 },
+          { number: 3, title: "Fracture", durationMinutes: 45 },
+          { number: 4, title: "L'Archive interdite", durationMinutes: 50 },
+          { number: 5, title: "Convergence", durationMinutes: 55 },
+        ],
+      },
+      {
+        number: 2,
+        title: "La Resistance",
+        synopsis: "La rebellion s'organise face a la surveillance totale.",
+        episodes: [
+          { number: 1, title: "Exil", durationMinutes: 47 },
+          { number: 2, title: "Nuit blanche", durationMinutes: 51 },
+          { number: 3, title: "Le protocole Omega", durationMinutes: 54 },
+          { number: 4, title: "Trahison", durationMinutes: 46 },
+          { number: 5, title: "Arcadia brule", durationMinutes: 62 },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "les-labyrinthes",
+    title: "Les Labyrinthes",
+    synopsis:
+      "Une detective obsessionnelle enquete sur une serie de disparitions dans une ville cotiere ou chaque habitant semble cacher un secret inavouable.",
+    releaseYear: 2021,
+    genres: ["thriller", "mystere", "drame"],
+    seasons: [
+      {
+        number: 1,
+        title: "Les Disparus",
+        synopsis: "La detective Vera est appelee sur une affaire qui va bouleverser sa vie.",
+        episodes: [
+          { number: 1, title: "Maree basse", durationMinutes: 50 },
+          { number: 2, title: "Sous la surface", durationMinutes: 48 },
+          { number: 3, title: "Le temoignage", durationMinutes: 52 },
+          { number: 4, title: "Pierres et silences", durationMinutes: 49 },
+          { number: 5, title: "Le labyrinthe de sel", durationMinutes: 56 },
+          { number: 6, title: "Verite froide", durationMinutes: 58 },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "nova-rangers",
+    title: "Nova Rangers",
+    synopsis:
+      "Une escouade interstellaire composee d'humains et d'aliens doit empecher la propagation d'un virus qui transforme ses victimes en armes de guerre.",
+    releaseYear: 2023,
+    genres: ["science-fiction", "aventure"],
+    seasons: [
+      {
+        number: 1,
+        title: null,
+        synopsis: null,
+        episodes: [
+          { number: 1, title: "Premier contact", durationMinutes: 42 },
+          { number: 2, title: "La quarantaine", durationMinutes: 44 },
+          { number: 3, title: "Alliance fragile", durationMinutes: 41 },
+          { number: 4, title: "Mutation", durationMinutes: 46 },
+        ],
+      },
+    ],
+  },
+];
+
 async function seed() {
   for (const genre of genres) {
     await prisma.genre.upsert({
@@ -91,6 +172,79 @@ async function seed() {
     });
   }
 
+  // ── Séries ──────────────────────────────────────────────────────────────────
+  for (const serie of series) {
+    // Upsert le média
+    const media = await prisma.media.upsert({
+      where: { slug: serie.slug },
+      update: {
+        title: serie.title,
+        synopsis: serie.synopsis,
+        type: "series",
+        status: "published",
+        releaseYear: serie.releaseYear,
+        genres: {
+          set: [],
+          connect: serie.genres.map((s) => ({ slug: s })),
+        },
+      },
+      create: {
+        slug: serie.slug,
+        title: serie.title,
+        synopsis: serie.synopsis,
+        type: "series",
+        status: "published",
+        releaseYear: serie.releaseYear,
+        genres: {
+          connect: serie.genres.map((s) => ({ slug: s })),
+        },
+        serie: { create: {} },
+      },
+      select: { id: true, serie: { select: { id: true } } },
+    });
+
+    // Crée le noeud Serie si absent (migration d'une entrée existante)
+    let serieId = media.serie?.id;
+    if (!serieId) {
+      const created = await prisma.serie.create({
+        data: { mediaId: media.id },
+        select: { id: true },
+      });
+      serieId = created.id;
+    }
+
+    // Saisons et épisodes
+    for (const season of serie.seasons) {
+      const dbSeason = await prisma.season.upsert({
+        where: { serieId_number: { serieId, number: season.number } },
+        update: { title: season.title, synopsis: season.synopsis },
+        create: {
+          serieId,
+          number: season.number,
+          title: season.title,
+          synopsis: season.synopsis,
+        },
+        select: { id: true },
+      });
+
+      for (const ep of season.episodes) {
+        await prisma.episode.upsert({
+          where: { seasonId_number: { seasonId: dbSeason.id, number: ep.number } },
+          update: { title: ep.title, durationMinutes: ep.durationMinutes, status: "published" },
+          create: {
+            seasonId: dbSeason.id,
+            number: ep.number,
+            title: ep.title,
+            durationMinutes: ep.durationMinutes,
+            status: "published",
+            videoPath: null,
+          },
+        });
+      }
+    }
+  }
+
+  // ── Films ────────────────────────────────────────────────────────────────────
   for (const film of films) {
     await prisma.media.upsert({
       where: {

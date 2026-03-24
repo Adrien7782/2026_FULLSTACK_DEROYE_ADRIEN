@@ -17,6 +17,12 @@ import {
   listAllSuggestions,
   updateSuggestionStatus,
 } from "../suggestions/suggestions.service.js";
+import {
+  createSeriesBodySchema,
+  createSeasonBodySchema,
+  createEpisodeBodySchema,
+} from "../series/series.schemas.js";
+import { addSeason, addEpisode, createSeries } from "../series/series.service.js";
 
 export const adminRouter = Router();
 
@@ -214,6 +220,109 @@ adminRouter.get("/media", async (req, res) => {
     items: medias.map((m) => ({ ...m, hasPoster: !!m.posterPath, posterPath: undefined })),
   });
 });
+
+// ─── Séries ──────────────────────────────────────────────────────────────────
+
+adminRouter.post(
+  "/series",
+  mediaUpload.fields([{ name: "poster", maxCount: 1 }]),
+  async (req, res) => {
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    const posterFile = files?.["poster"]?.[0];
+
+    try {
+      if (posterFile && posterFile.size > UPLOAD_MAX_IMAGE_BYTES) {
+        throw new ApiError(400, `Image trop grande. Maximum: ${env.UPLOAD_MAX_IMAGE_MB} Mo`);
+      }
+
+      const body = createSeriesBodySchema.parse({
+        title: req.body.title,
+        synopsis: req.body.synopsis,
+        releaseYear: req.body.releaseYear ? Number(req.body.releaseYear) : undefined,
+        status: req.body.status,
+        genreIds: req.body.genreIds
+          ? typeof req.body.genreIds === "string"
+            ? JSON.parse(req.body.genreIds)
+            : req.body.genreIds
+          : undefined,
+      });
+
+      const rawPosterPath = typeof req.body.posterPath === "string" ? req.body.posterPath : "";
+      const posterSourceMode = req.body.posterSourceMode === "upload" ? "upload" : "reference";
+      if (posterSourceMode === "reference" && posterFile) {
+        await unlink(posterFile.path).catch(() => {});
+      }
+
+      const posterPath =
+        posterSourceMode === "upload"
+          ? posterFile ? `posters/${posterFile.filename}` : undefined
+          : rawPosterPath.trim()
+            ? validateReferencedMediaPath(rawPosterPath, "poster")
+            : undefined;
+
+      const serie = await createSeries({ ...body, posterPath });
+      res.status(201).json({ serie });
+    } catch (error) {
+      if (posterFile) await unlink(posterFile.path).catch(() => {});
+      throw error;
+    }
+  },
+);
+
+adminRouter.post("/series/:slug/seasons", async (req, res) => {
+  const { slug } = req.params;
+  const body = createSeasonBodySchema.parse({
+    number: Number(req.body.number),
+    title: req.body.title,
+    synopsis: req.body.synopsis,
+  });
+  const season = await addSeason(slug, body);
+  res.status(201).json({ season });
+});
+
+adminRouter.post(
+  "/series/:slug/seasons/:seasonNumber/episodes",
+  mediaUpload.fields([{ name: "video", maxCount: 1 }]),
+  async (req, res) => {
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    const videoFile = files?.["video"]?.[0];
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const seasonNumber = Number(req.params.seasonNumber);
+
+    try {
+      if (videoFile && videoFile.size > UPLOAD_MAX_VIDEO_BYTES) {
+        throw new ApiError(400, `Vidéo trop grande. Maximum: ${env.UPLOAD_MAX_VIDEO_MB} Mo`);
+      }
+
+      const body = createEpisodeBodySchema.parse({
+        number: Number(req.body.number),
+        title: req.body.title,
+        synopsis: req.body.synopsis,
+        durationMinutes: req.body.durationMinutes ? Number(req.body.durationMinutes) : undefined,
+        status: req.body.status,
+      });
+
+      const rawVideoPath = typeof req.body.videoPath === "string" ? req.body.videoPath : "";
+      const videoSourceMode = req.body.videoSourceMode === "upload" ? "upload" : "reference";
+      if (videoSourceMode === "reference" && videoFile) {
+        await unlink(videoFile.path).catch(() => {});
+      }
+
+      const videoPath =
+        videoSourceMode === "upload"
+          ? videoFile ? `videos/${videoFile.filename}` : undefined
+          : rawVideoPath.trim()
+            ? validateReferencedMediaPath(rawVideoPath, "video")
+            : undefined;
+
+      const episode = await addEpisode(slug, seasonNumber, { ...body, videoPath });
+      res.status(201).json({ episode });
+    } catch (error) {
+      if (videoFile) await unlink(videoFile.path).catch(() => {});
+      throw error;
+    }
+  },
+);
 
 // ─── Suppression média ────────────────────────────────────────────────────────
 

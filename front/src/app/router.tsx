@@ -6,6 +6,7 @@ import { AdminMediaPage } from "../pages/AdminMediaPage";
 import { AdminPage } from "../pages/AdminPage";
 import { AdminSuggestionsPage } from "../pages/AdminSuggestionsPage";
 import { AdminUsersPage } from "../pages/AdminUsersPage";
+import { EpisodePlayerPage } from "../pages/EpisodePlayerPage";
 import { FavoritesPage } from "../pages/FavoritesPage";
 import { FilmDetailPage } from "../pages/FilmDetailPage";
 import { FilmsPage } from "../pages/FilmsPage";
@@ -13,8 +14,11 @@ import { HistoryPage } from "../pages/HistoryPage";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { NotificationsPage } from "../pages/NotificationsPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { SerieDetailPage } from "../pages/SerieDetailPage";
+import { SeriesPage } from "../pages/SeriesPage";
 import { SuggestionsPage } from "../pages/SuggestionsPage";
 import { UserProfilePage } from "../pages/UserProfilePage";
 import { WatchlistPage } from "../pages/WatchlistPage";
@@ -55,6 +59,22 @@ export const appRouter = createBrowserRouter([
       {
         path: "users/:username",
         element: <RequireAuth><UserProfilePage /></RequireAuth>,
+      },
+      {
+        path: "series",
+        element: <RequireAuth><SeriesPage /></RequireAuth>,
+      },
+      {
+        path: "series/:slug",
+        element: <RequireAuth><SerieDetailPage /></RequireAuth>,
+      },
+      {
+        path: "series/:slug/episodes/:episodeId",
+        element: <RequireAuth><EpisodePlayerPage /></RequireAuth>,
+      },
+      {
+        path: "notifications",
+        element: <RequireAuth><NotificationsPage /></RequireAuth>,
       },
       {
         path: "suggestions",

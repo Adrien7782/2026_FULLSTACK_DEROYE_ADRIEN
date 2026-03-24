@@ -86,10 +86,12 @@ Il faudra une page de gestion des signalements pour les administrateurs.
 Les medias sont stockes en local sur le PC serveur. L'acces se fait via des paths. L'arborescence des medias est tres rangee.
 
 * Medias
-    * Films
-    * Series
-        * Saisons
-            * Episodes
+  * Films
+    * Film
+  * Series
+    * Serie
+      * Saisons
+        * Episodes
 
 
 ## Technique

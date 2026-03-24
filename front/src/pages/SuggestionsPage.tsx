@@ -109,7 +109,6 @@ export function SuggestionsPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex : Inception, The Dark Knight…"
               disabled={isSubmitting}
               autoComplete="off"
             />

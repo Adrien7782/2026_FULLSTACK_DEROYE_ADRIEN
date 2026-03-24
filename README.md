@@ -1,247 +1,232 @@
-# 2026_FULLSTACK_DEROYE_ADRIEN
+# StreamAdy
 
-## Etat actuel — V1 (Phase 6)
+Plateforme de streaming privee auto-hebergee. Permet d'uploader, organiser et regarder des films depuis un navigateur, en reseau local ou sur un serveur prive.
 
-- PostgreSQL dans Docker, Prisma, migrations, seed
-- Backend Express + Prisma + OpenAPI (Swagger UI sur `/docs/ui`)
-- Frontend React + Vite + React Router + theme clair/sombre
-- Dockerisation complete : `db`, `backend`, `frontend`
-- **Phase 1** — Authentification `username/password`, sessions cookie HTTP-only, profil, `logout` / `logout-all`
-- **Phase 2** — Catalogue `Media + Genre`, accueil, page Films, recherche, filtre, pagination curseur, fiche detail
-- **Phase 3** — Upload admin (video + affiche, multipart), streaming HTTP Range, suivi de progression
-- **Phase 4** — Favoris, watchlist, notes (1..5), historique, reprise de lecture
-- **Phase 5** — Suggestions (workflow `pending → accepted/refused → processed`), administration (utilisateurs, medias)
-- **Phase 6** — Swagger UI integre, tests backend et frontend, gestion d'erreurs globale, Docker Compose finalise
+## Fonctionnalites V1
 
-## Variables d'environnement
+- Authentification `username/password`, sessions persistantes
+- Catalogue films avec recherche, filtres par genre et pagination
+- Upload de films et affiches (admin), streaming HTTP Range
+- Favoris, watchlist, notes (1-5), historique, reprise de lecture
+- Suggestions de films avec workflow de validation admin
+- Administration des utilisateurs et des medias
+- API documentee avec Swagger UI
 
-Des fichiers d'exemple sont fournis:
+---
 
-- `back/.env.example`
-- `front/.env.example`
+## Prerequis
 
-## Lancement local
+| Outil | Version minimale | Utilisation |
+|-------|-----------------|-------------|
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | 24+ | Fait tourner toute la stack |
+| [Node.js](https://nodejs.org/) | 20+ | Uniquement pour le developpement local |
+| [Git](https://git-scm.com/) | — | Cloner le projet |
 
-### Base de donnees
+> **Pour une installation simple**, seul Docker Desktop est necessaire.
 
-- `docker compose up -d db`
-- `docker compose ps`
+---
 
-### Backend
+## Installation et lancement (Docker — recommande)
 
-- `cd back`
-- `npm run dev`
-- API disponible sur `http://localhost:3000`
-- Docs OpenAPI (liste HTML) disponibles sur `http://localhost:3000/docs`
-- **Swagger UI interactif disponible sur `http://localhost:3000/docs/ui`**
-- JSON OpenAPI brut disponible sur `http://localhost:3000/docs/openapi.json`
-- Routes phase 1 disponibles sous `http://localhost:3000/api/auth` et `http://localhost:3000/api/users`
-- Routes phase 2 disponibles sous `http://localhost:3000/api/media`
-
-### Lecture video locale et chemins fichiers
-
-Le frontend ne doit jamais lire directement un chemin Windows du type `C:\\Videos\\film.mp4`.
-
-Le fonctionnement retenu est le suivant:
-
-- la base stocke des chemins relatifs, par exemple `videos/interstellar.mp4` ou `posters/interstellar.svg`
-- ces chemins sont resolus par le backend a partir de `DATA_DIRECTORY`
-- le navigateur consomme ensuite des routes HTTP protegees:
-  - `GET /api/media/:slug/poster`
-  - `GET /api/media/:slug/stream`
-- la route video supporte `HTTP Range`, ce qui permet la lecture partielle d'un fichier local
-
-En local:
-
-- `DATA_DIRECTORY=./data`
-- le backend lit donc les fichiers dans `back/data`
-
-En Docker:
-
-- `DATA_DIRECTORY=/app/data`
-- `docker-compose.yml` monte `./2026_FULLSTACK_DEROYE_ADRIEN/back/data` dans le conteneur backend
-
-Si tu veux lire des videos stockees ailleurs sur ton PC plus tard, il faudra changer uniquement le chemin monte dans `docker-compose.yml`, tout en gardant des chemins relatifs en base.
-
-### Frontend
-
-- `cd front`
-- `npm run dev`
-- Front disponible sur `http://localhost:5173`
-- En developpement, Vite proxy automatiquement `/api`, `/health` et `/docs` vers `http://localhost:3000`
-
-## Lancement dockerise
-
-### Prerequis
-
-- Docker Desktop installe et demarrant
-- Ports `80`, `3000` et `5433` libres sur la machine
-
-### Premier lancement (installation propre)
+### 1. Cloner le projet
 
 ```bash
-# Depuis la racine du projet
+git clone <url-du-repo>
+cd 2026_FULLSTACK_DEROYE_ADRIEN
+```
+
+### 2. Lancer la stack
+
+```bash
 docker compose up -d --build
 ```
 
-Le compose demarre automatiquement dans le bon ordre : `db` → `backend` (migration Prisma incluse) → `frontend`.
+Docker demarre automatiquement dans le bon ordre :
+- La base de donnees PostgreSQL
+- Le backend (applique les migrations Prisma automatiquement au demarrage)
+- Le frontend Nginx
 
-- Frontend : `http://localhost:80`
-- API : `http://localhost:3000`
-- Swagger UI : `http://localhost:3000/docs/ui`
+### 3. Acceder a l'application
 
-### Demarrage habituel (sans rebuild)
+| Service | URL |
+|---------|-----|
+| Application | http://localhost |
+| API | http://localhost:3000 |
+| Swagger UI | http://localhost:3000/docs/ui |
+
+### 4. Creer un compte
+
+Ouvre http://localhost/register et cree ton premier compte.
+
+Pour avoir un compte administrateur, il faut modifier le role du premier utilisateur directement en base. Voir la section [Ajouter un administrateur](#ajouter-un-administrateur).
+
+---
+
+## Lancement en mode developpement (sans Docker)
+
+Utile pour modifier le code et voir les changements en temps reel.
+
+### Prerequis supplementaires
+
+- Node.js 20+
+- Une instance PostgreSQL accessible (ou `docker compose up -d db` pour demarrer uniquement la base)
+
+### 1. Configurer les variables d'environnement
 
 ```bash
+cp back/.env.example back/.env
+cp front/.env.example front/.env
+```
+
+Editer `back/.env` et ajuster `DATABASE_URL` selon ton installation PostgreSQL.
+
+### 2. Installer les dependances
+
+```bash
+cd back && npm install
+cd ../front && npm install
+```
+
+### 3. Appliquer les migrations et generer le client Prisma
+
+```bash
+cd back
+npx prisma migrate dev
+npx prisma generate
+```
+
+### 4. Lancer le backend
+
+```bash
+cd back
+npm run dev
+# API disponible sur http://localhost:3000
+```
+
+### 5. Lancer le frontend
+
+```bash
+cd front
+npm run dev
+# Application disponible sur http://localhost:5173
+```
+
+En mode dev, Vite proxifie automatiquement `/api`, `/health` et `/docs` vers `http://localhost:3000`.
+
+---
+
+## Ajouter un administrateur
+
+Depuis le repertoire `back/`, ouvrir Prisma Studio :
+
+```bash
+npx prisma studio
+```
+
+Ou, si la base tourne dans Docker :
+
+```bash
+DATABASE_URL="postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public" npx prisma studio
+```
+
+Dans la table `User`, modifier le champ `role` de `standard` a `admin` pour l'utilisateur souhaite.
+
+---
+
+## Structure des medias
+
+Les fichiers video et les affiches sont stockes localement dans `back/data/` :
+
+```
+back/data/
+  posters/    → affiches des films
+  videos/     → fichiers video
+```
+
+En Docker, ce dossier est monte comme volume dans le conteneur backend. Les fichiers survivent aux arrets et rebuilds.
+
+> Si tu veux stocker les videos dans un autre dossier sur ta machine, modifie le volume dans `docker-compose.yml` :
+> ```yaml
+> volumes:
+>   - /chemin/vers/tes/videos:/app/data
+> ```
+
+---
+
+## Commandes utiles
+
+### Docker
+
+```bash
+# Demarrer la stack
 docker compose up -d
-```
 
-### Arrêt
-
-```bash
+# Arreter la stack (donnees conservees)
 docker compose down
-```
 
-### Arrêt et suppression des donnees
-
-```bash
+# Arreter et supprimer toutes les donnees
 docker compose down -v
-```
 
-### Rebuild d'un seul service
-
-```bash
+# Rebuild d'un seul service apres modification du code
 docker compose up -d --build backend
 docker compose up -d --build frontend
+
+# Voir les logs
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
-### Stack complete (ancienne commande equivalente)
+### Backend (depuis `back/`)
 
 ```bash
-docker compose up -d --build db backend frontend
+npm run dev          # Lancer en mode developpement
+npm run build        # Compiler TypeScript
+npm run typecheck    # Verifier les types
+npm test             # Lancer les tests
+npm run prisma:seed  # Peupler la base avec des donnees de demo
+npx prisma studio    # Interface graphique pour la base de donnees
+npx prisma migrate dev --name <nom>  # Creer une migration
 ```
 
-### Notes
+### Frontend (depuis `front/`)
 
-- Le backend applique `prisma migrate deploy` automatiquement au demarrage du conteneur.
-- Les fichiers media (videos, affiches) sont persistes dans `back/data` sur la machine hote, montes dans le conteneur backend via un volume.
-- La base de donnees est stockee dans le volume Docker `db_data`. Elle survit aux arrets mais est supprimee avec `docker compose down -v`.
-- `SESSION_COOKIE_SECURE=false` doit rester tant que la stack tourne en HTTP sans reverse proxy TLS.
+```bash
+npm run dev          # Lancer en mode developpement
+npm run build        # Compiler pour la production
+npm run typecheck    # Verifier les types
+npm run lint         # Verifier le code
+npm test             # Lancer les tests
+```
 
-## Prisma
+---
 
-### Lancer une migration
+## Variables d'environnement
 
-- `npx prisma migrate dev --name phase2_catalog`
-- `npx prisma generate`
+Les fichiers `.env.example` contiennent toutes les variables avec leurs valeurs par defaut.
 
-### Peupler le catalogue de demo
+| Fichier | Description |
+|---------|-------------|
+| `back/.env.example` | Variables du backend (base de donnees, sessions, upload, logs) |
+| `front/.env.example` | Variables du frontend (URL API, limites upload) |
 
-- `npm run prisma:seed`
+Les variables injectees par Docker Compose en production sont definies directement dans `docker-compose.yml`.
 
-### Structure media locale
+---
 
-- `back/data/posters` contient les affiches locales servies par l'API
-- `back/data/videos` est le dossier cible pour les futurs fichiers video
+## Ports utilises
 
-### Visualiser les tables de la DB
+| Port | Service |
+|------|---------|
+| `80` | Frontend (Docker) |
+| `3000` | Backend API |
+| `5433` | PostgreSQL (dev local) |
+| `5434` | PostgreSQL (Docker, acces externe) |
 
-- `npx prisma studio` depuis back
-- `npx prisma studio --config ./2026_FULLSTACK_DEROYE_ADRIEN/back/prisma.config.ts` depuis la racine du projet
+---
 
+## Notes techniques
 
-## Verification du socle
-
-### Backend
-
-- `npm run build`
-- `npm run typecheck`
-- `http://localhost:3000/health`
-- `http://localhost:3000/docs`
-- `http://localhost:3000/docs/ui` (Swagger UI interactif)
-
-### Frontend
-
-- `npm run typecheck`
-- `npm run lint`
-- `http://localhost:5173`
-
-## Verification phase 1
-
-- creer un compte sur `http://localhost:5173/register`
-- se connecter sur `http://localhost:5173/login`
-- verifier le profil sur `http://localhost:5173/profile`
-- verifier `GET http://localhost:3000/api/users/me` avec le cookie de session
-- verifier `POST http://localhost:3000/api/auth/logout`
-
-## Verification phase 2
-
-- lancer `npm run prisma:seed` dans `back/` pour charger le catalogue de demo
-- verifier l'accueil sur `http://localhost:5173/`
-- verifier la page films sur `http://localhost:5173/films`
-- tester la recherche par titre et le filtre par genre
-- ouvrir une fiche film sur `http://localhost:5173/films/<slug>`
-- verifier `GET http://localhost:3000/api/media/home`
-- verifier `GET http://localhost:3000/api/media?type=film&limit=12`
-- verifier `GET http://localhost:3000/api/media/<slug>`
-- verifier `GET http://localhost:3000/api/media/<slug>/poster`
-
-## Bonnes pratiques Git
-
-Pour ce projet, l'historique Git doit suivre les phases du `PLAN_IMPLEMENTATION.md`.
-
-### Routine recommandee
-
-- toujours lancer `git status` avant de commit
-- faire les commandes Git depuis la racine du repo
-- verifier que `.env`, `node_modules`, `dist` et autres fichiers generes ne partent pas dans le commit
-- faire un commit par bloc coherent de travail, pas un commit par fichier
-- faire au minimum un commit propre a la fin de chaque phase
-- pousser regulierement sur le remote pour garder une sauvegarde exploitable
-
-### Convention simple de commits
-
-- `chore:` pour le socle technique, la config, Docker, Prisma, scripts
-- `feat:` pour une fonctionnalite produit
-- `fix:` pour une correction de bug
-- `docs:` pour README, plan, AGENTS et documentation technique
-
-Exemples:
-
-- `chore: complete phase 0 technical foundation`
-- `feat: implement phase 1 authentication and user management`
-- `fix: correct session cookie handling in local docker setup`
-- `docs: update readme for phase 1 workflows`
-
-### Tags de jalons
-
-Utiliser un tag a la fin de chaque phase stable:
-
-- `phase-0`
-- `phase-1`
-- `phase-2`
-
-Exemple de sequence:
-
-- `git add -A`
-- `git commit -m "feat: implement phase 1 authentication and user management"`
-- `git tag phase-1`
-- `git push`
-- `git push origin phase-1`
-
-Les tags servent a retrouver facilement un jalon, comparer deux etats du projet et revenir sur un point stable.
-
-### Commandes utiles
-
-- `git log --oneline --decorate --graph`
-- `git tag`
-- `git show phase-1`
-- `git diff phase-0 phase-1`
-
-## Notes importantes
-
-- en local, Prisma utilise `localhost:5433` depuis `back/.env`
-- dans Docker, le backend utilise `db:5432` via `docker-compose.yml`
-- le frontend utilise maintenant des URLs relatives et proxy l'API en same-origin
-- ce proxy evite les problemes de session sur les affiches et preparera mieux la lecture video HTML
-- `SESSION_COOKIE_SECURE=false` doit rester en local tant que la stack tourne en HTTP
+- Le cookie de session est HTTP-only. `SESSION_COOKIE_SECURE=false` doit rester en HTTP sans TLS.
+- Le streaming video utilise HTTP Range — compatible avec tous les navigateurs modernes.
+- En Docker, le backend se connecte a la base via `db:5432` (reseau interne Docker). Le port `5434` est uniquement pour les outils externes (Prisma Studio, DBeaver, etc.).
+- Les migrations Prisma sont appliquees automatiquement au demarrage du conteneur backend via `prisma migrate deploy`.

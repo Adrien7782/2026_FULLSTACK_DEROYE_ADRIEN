@@ -14,7 +14,6 @@
 2. Livrer une V1 exploitable autour de l'authentification, du catalogue, du streaming et de l'upload de films.
 3. Ajouter les suggestions et l'administration avancee.
 4. Ouvrir la V2 avec les series, les notifications et les profils publics.
-5. Terminer par la moderation et les signalements en V3.
 
 ## Vue d'ensemble des phases
 
@@ -27,7 +26,6 @@
 - Phase 6 - Stabilisation et release V1
 - Phase 7 - V2 series et notifications
 - Phase 8 - V2 profils publics et recherche utilisateurs
-- Phase 9 - V3 signalements et moderation
 
 ## Phase 0 - Cadrage technique et socle du projet
 
@@ -371,27 +369,6 @@ Objectifs:
 - Ajouter une recherche d'utilisateurs.
 - Integrer cette recherche au composant global de navigation.
 
-## Phase 9 - V3 signalements et moderation
-
-### Objectif
-
-Introduire la moderation et le traitement des abus.
-
-### Sprint 9.1 - Signalements
-
-Objectifs:
-
-- Implementer le modele `Report`.
-- Permettre le signalement de medias par tous les utilisateurs.
-- Permettre le signalement d'utilisateurs par les administrateurs.
-
-### Sprint 9.2 - Backoffice moderation
-
-Objectifs:
-
-- Creer la page admin de gestion des signalements.
-- Ajouter les statuts de traitement.
-- Journaliser les actions de moderation.
 
 ## Travaux transverses a maintenir tout au long du projet
 

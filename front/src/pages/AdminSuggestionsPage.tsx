@@ -257,7 +257,6 @@ export function AdminSuggestionsPage() {
               </label>
               <textarea
                 id="refuse-reason"
-                rows={3}
                 value={refuseReason}
                 onChange={(e) => setRefuseReason(e.target.value)}
                 placeholder="Expliquez pourquoi cette suggestion est refusée…"

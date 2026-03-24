@@ -28,7 +28,7 @@ export function LoginPage() {
   };
 
   return (
-    <section className="page-section">
+    <section className="auth-page">
       <div className="panel auth-panel">
         <div>
           <p className="eyebrow">Authentification</p>

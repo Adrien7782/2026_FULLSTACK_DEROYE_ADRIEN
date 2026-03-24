@@ -1,105 +1,134 @@
-:root {
-  font-family:
-    "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  --bg: #f2ece3;
-  --panel: #ffffff;
-  --panel-alt: #f7f2eb;
-  --sidebar-bg: #fdf8f3;
-  --nav-bg: #f0ebe2;
-  --nav-hover: #e8e0d5;
-  --text: #1a1f28;
-  --muted: #6b7685;
-  --border: #d6d0c8;
-  --accent: #c0622e;
-  --accent-strong: #9a4a22;
-  --accent-soft: rgba(192, 98, 46, 0.15);
-  --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.1);
-  --danger: #c0392b;
-  --success: #27704f;
-  --focus-ring: rgba(192, 98, 46, 0.3);
-  --role-admin-bg: rgba(192, 98, 46, 0.12);
-  --role-admin-color: #9a4a22;
-  --role-standard-bg: rgba(107, 118, 133, 0.12);
-  --role-standard-color: #4a5568;
+@layer base {
+  :root {
+    /* ── Tailwind / shadcn tokens (HSL) ─── */
+    --background: 40 33% 97%;
+    --foreground: 0 8% 12%;
 
-  color: var(--text);
-  background: var(--bg);
+    --card: 40 20% 98%;
+    --card-foreground: 0 8% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 8% 12%;
+
+    --primary: 18 60% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 20% 92%;
+    --secondary-foreground: 0 8% 12%;
+
+    --muted: 40 15% 91%;
+    --muted-foreground: 0 5% 45%;
+
+    --accent: 40 15% 91%;
+    --accent-foreground: 0 8% 12%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 40 16% 87%;
+    --input: 40 16% 87%;
+    --ring: 18 60% 46%;
+
+    --radius: 0.5rem;
+
+    /* ── App.css custom tokens (couleurs directes) ─── */
+    --bg: #f7f4ee;
+    --panel: rgba(255, 255, 255, 0.88);
+    --panel-alt: #f0ece3;
+    --sidebar-bg: #f0ece3;
+    --nav-bg: rgba(235, 230, 220, 0.5);
+    --nav-hover: rgba(192, 98, 46, 0.08);
+    --text: #211c1c;
+    --text-muted: #6b5e5e;
+    --dim: #9e8e8e;
+    --border-color: #ded8cc;
+    --brand: #c0622e;
+    --brand-strong: #a04e20;
+    --brand-soft: rgba(192, 98, 46, 0.12);
+    --brand-muted: rgba(192, 98, 46, 0.18);
+    --card-bg: #ffffff;
+    --card-bg-hover: #f7f4ee;
+    --danger: #ef4444;
+    --success: #059669;
+    --success-bg: #d1fae5;
+    --shadow-soft: 0 1px 4px rgba(25, 21, 21, 0.04);
+    --shadow-panel: 0 2px 12px rgba(25, 21, 21, 0.06);
+    --shadow-elevated: 0 8px 32px rgba(25, 21, 21, 0.12);
+    --role-admin-bg: rgba(192, 98, 46, 0.12);
+    --role-admin-color: #a04e20;
+    --role-standard-bg: rgba(107, 94, 94, 0.1);
+    --role-standard-color: #6b5e5e;
+  }
+
+  .dark {
+    /* ── Tailwind / shadcn tokens (HSL) ─── */
+    --background: 0 8% 10%;
+    --foreground: 40 33% 92%;
+
+    --card: 0 7% 13%;
+    --card-foreground: 40 33% 92%;
+
+    --popover: 0 7% 13%;
+    --popover-foreground: 40 33% 92%;
+
+    --primary: 18 55% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 5% 20%;
+    --secondary-foreground: 40 33% 92%;
+
+    --muted: 0 5% 18%;
+    --muted-foreground: 0 4% 56%;
+
+    --accent: 0 5% 18%;
+    --accent-foreground: 40 33% 92%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 5% 22%;
+    --input: 0 5% 22%;
+    --ring: 18 55% 52%;
+
+    /* ── App.css custom tokens ─── */
+    --bg: #1a1614;
+    --panel: #231f1d;
+    --panel-alt: #2a2523;
+    --sidebar-bg: #1e1a18;
+    --nav-bg: rgba(255, 255, 255, 0.04);
+    --nav-hover: rgba(212, 116, 62, 0.12);
+    --text: #f0ece3;
+    --text-muted: #a89e9e;
+    --dim: #7a6e6e;
+    --border-color: #3a3230;
+    --brand: #d4743e;
+    --brand-strong: #e0845a;
+    --brand-soft: rgba(212, 116, 62, 0.15);
+    --brand-muted: rgba(212, 116, 62, 0.2);
+    --card-bg: #231f1d;
+    --card-bg-hover: #2a2523;
+    --danger: #f87171;
+    --success: #34d399;
+    --success-bg: rgba(52, 211, 153, 0.15);
+    --shadow-soft: 0 1px 4px rgba(0, 0, 0, 0.2);
+    --shadow-panel: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --role-admin-bg: rgba(212, 116, 62, 0.15);
+    --role-admin-color: #e0845a;
+    --role-standard-bg: rgba(168, 158, 158, 0.1);
+    --role-standard-color: #a89e9e;
+  }
 }
 
-html[data-theme="dark"] {
-  --bg: #0e1318;
-  --panel: #18222c;
-  --panel-alt: #1e2d3a;
-  --sidebar-bg: #131c24;
-  --nav-bg: #1a2634;
-  --nav-hover: #243344;
-  --text: #e8f0f6;
-  --muted: #8fa3b4;
-  --border: #263545;
-  --accent: #e8905a;
-  --accent-strong: #ffad78;
-  --accent-soft: rgba(232, 144, 90, 0.18);
-  --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.3);
-  --shadow-panel: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --danger: #e05c52;
-  --success: #4caf80;
-  --focus-ring: rgba(232, 144, 90, 0.35);
-  --role-admin-bg: rgba(232, 144, 90, 0.15);
-  --role-admin-color: #ffad78;
-  --role-standard-bg: rgba(143, 163, 180, 0.15);
-  --role-standard-color: #8fa3b4;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button,
-input,
-a {
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease,
-    opacity 0.15s ease;
-}
-
-a {
-  color: inherit;
-}
-
-button:focus-visible,
-input:focus-visible,
-a:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring);
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

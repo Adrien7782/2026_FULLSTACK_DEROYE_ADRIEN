@@ -38,8 +38,12 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       const nextResolvedTheme = theme === "system" ? getSystemTheme() : theme;
 
       setResolvedTheme(nextResolvedTheme);
-      document.documentElement.dataset.theme = nextResolvedTheme;
-      document.documentElement.style.colorScheme = nextResolvedTheme;
+      
+      const root = window.document.documentElement;
+      root.classList.remove("light", "dark");
+      root.classList.add(nextResolvedTheme);
+
+      root.style.colorScheme = nextResolvedTheme;
       window.localStorage.setItem(STORAGE_KEY, theme);
     };
 

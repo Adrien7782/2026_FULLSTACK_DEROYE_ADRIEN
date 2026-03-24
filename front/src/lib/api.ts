@@ -563,3 +563,149 @@ export const listAdminMedia = (status?: string) =>
 
 export const deleteMediaBySlug = (slug: string) =>
   request<void>(`/admin/media/${slug}`, { method: "DELETE" });
+
+// ─── Series ──────────────────────────────────────────────────────────────────
+
+export type EpisodeItem = {
+  id: string;
+  number: number;
+  title: string;
+  synopsis: string | null;
+  durationMinutes: number | null;
+  status: MediaStatus;
+  hasVideo: boolean;
+  createdAt: string;
+};
+
+export type SeasonItem = {
+  id: string;
+  number: number;
+  title: string | null;
+  synopsis: string | null;
+  episodeCount: number;
+  episodes: EpisodeItem[];
+};
+
+export type SerieDetailResponse = {
+  id: string;
+  slug: string;
+  title: string;
+  synopsis: string;
+  type: MediaType;
+  status: MediaStatus;
+  releaseYear: number | null;
+  hasPoster: boolean;
+  createdAt: string;
+  updatedAt: string;
+  genres: MediaGenre[];
+  seasons: SeasonItem[];
+};
+
+export const getSerieDetail = (slug: string) =>
+  request<SerieDetailResponse>(`/series/${slug}`, { method: "GET" });
+
+export type EpisodeDetail = {
+  id: string;
+  number: number;
+  title: string;
+  synopsis: string | null;
+  durationMinutes: number | null;
+  status: MediaStatus;
+  videoPath: string | null;
+  season: {
+    number: number;
+    title: string | null;
+    serie: { media: { id: string; slug: string; title: string; status: MediaStatus } };
+  };
+};
+
+export const getEpisode = (id: string) =>
+  request<{ episode: EpisodeDetail }>(`/series/episodes/${id}`, { method: "GET" });
+
+export const getEpisodeProgress = (id: string) =>
+  request<{ progress: { positionSeconds: number; durationSeconds: number | null; completed: boolean } | null }>(
+    `/series/episodes/${id}/progress`,
+    { method: "GET" },
+  );
+
+export const saveEpisodeProgress = (
+  id: string,
+  positionSeconds: number,
+  durationSeconds?: number,
+  completed?: boolean,
+) =>
+  request<void>(`/series/episodes/${id}/progress`, {
+    method: "POST",
+    body: JSON.stringify({ positionSeconds, durationSeconds, completed }),
+  });
+
+export const getEpisodeStreamUrl = (id: string) =>
+  `${API_BASE_URL}/series/episodes/${id}/stream`;
+
+export const getSerieResume = (slug: string) =>
+  request<{ episodeId: string | null }>(`/series/${slug}/resume`, { method: "GET" });
+
+export const createAdminSeries = (formData: FormData) =>
+  fetch(`${API_BASE_URL}/admin/series`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (r) => {
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({})) as { message?: string };
+      throw new Error(err.message ?? "Erreur");
+    }
+    return r.json() as Promise<{ serie: { id: string; slug: string; title: string } }>;
+  });
+
+export const addAdminSeason = (
+  slug: string,
+  data: { number: number; title?: string; synopsis?: string },
+) =>
+  request<{ season: { id: string; number: number; title: string | null } }>(
+    `/admin/series/${slug}/seasons`,
+    { method: "POST", body: JSON.stringify(data) },
+  );
+
+export const addAdminEpisode = (slug: string, seasonNumber: number, formData: FormData) =>
+  fetch(`${API_BASE_URL}/admin/series/${slug}/seasons/${seasonNumber}/episodes`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (r) => {
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({})) as { message?: string };
+      throw new Error(err.message ?? "Erreur");
+    }
+    return r.json() as Promise<{ episode: { id: string; number: number; title: string } }>;
+  });
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | "suggestion_accepted"
+  | "suggestion_refused"
+  | "suggestion_processed"
+  | "new_episode";
+
+export type NotificationItem = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  isRead: boolean;
+  link: string | null;
+  createdAt: string;
+};
+
+export const listNotifications = () =>
+  request<{ items: NotificationItem[]; unreadCount: number }>("/notifications", { method: "GET" });
+
+export const getUnreadCount = () =>
+  request<{ count: number }>("/notifications/unread-count", { method: "GET" });
+
+export const markNotificationRead = (id: string) =>
+  request<void>(`/notifications/${id}/read`, { method: "PATCH" });
+
+export const markAllNotificationsRead = () =>
+  request<void>("/notifications/read-all", { method: "POST" });
