@@ -54,17 +54,6 @@ export function HistoryPage() {
 
   return (
     <section className="page-section">
-      <div className="panel">
-        <p className="eyebrow">Fonctionnement</p>
-        <h2>Votre historique</h2>
-        <p className="muted">
-          Ta progression est sauvegardée automatiquement (toutes les 10 secondes, à la pause et en
-          quittant la fiche). Un film apparaît ici dès 1 seconde visionnée. Il passe en{" "}
-          <strong>Terminé</strong> à 90 % de lecture. Les films restent dans l&apos;historique
-          indéfiniment.
-        </p>
-      </div>
-
       {inProgress.length > 0 && (
         <div className="panel">
           <p className="eyebrow">En cours</p>

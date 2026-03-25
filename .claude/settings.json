@@ -23,7 +23,11 @@
       "Bash(npx tsx --env-file=.env -e \":*)",
       "Bash(DATABASE_URL=\"postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public\" npx tsx prisma/seed.ts)",
       "Bash(PGPASSWORD=streamady_password psql -h localhost -p 5434 -U streamady -d streamady -c \"SELECT slug, title, type, status FROM \"\"Media\"\" WHERE type=''series'';\")",
-      "Bash(DATABASE_URL=\"postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public\" npx tsx -e \":*)"
+      "Bash(DATABASE_URL=\"postgresql://streamady:streamady_password@localhost:5434/streamady?schema=public\" npx tsx -e \":*)",
+      "Bash(grep -rn \"mkdirSync\\\\|mkdir\\\\|posters\\\\|videos\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENbacksrc --include=*.ts)",
+      "Bash(grep -rn \"mkdir\\\\|posters\\\\|videos\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENback --include=*.ts --include=*.js -l)",
+      "Bash(grep -rn \"setInterval\\\\|setTimeout\\\\|polling\\\\|users/me\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENfrontsrc --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn \"favorites\\\\|watchlist\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENbacksrc --include=*.ts -l)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -1,330 +1,109 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  UPLOAD_MAX_IMAGE_MB,
-  UPLOAD_MAX_VIDEO_MB,
-  getUploadTooLargeMessage,
+  importFilmFromDir,
   listCatalogGenres,
-  validateMediaPath,
+  scanFilmPath,
+  getAdminPreviewAssetUrl,
   type CatalogGenre,
+  type FilmDirectoryScan,
   type CreateMediaResult,
 } from "../../lib/api";
 import { useUpload } from "../../upload/useUpload";
-import { FileUpload } from "./FileUpload";
 
 type UploadPopupProps = {
   onClose: () => void;
   onUploaded?: (result: CreateMediaResult) => void;
 };
 
-type PathValidationState = {
-  status: "idle" | "validating" | "valid" | "invalid";
-  message: string;
-};
-
-const idleValidationState: PathValidationState = {
-  status: "idle",
-  message: "",
-};
-
 export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
-  const { startUpload } = useUpload();
+  const { bumpCatalogVersion } = useUpload();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
+  // ── Metadata ───────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [synopsis, setSynopsis] = useState("");
   const [releaseYear, setReleaseYear] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState("");
   const [status, setStatus] = useState<"published" | "draft">("published");
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const [genres, setGenres] = useState<CatalogGenre[]>([]);
-  const [videoSourceMode, setVideoSourceMode] = useState<"reference" | "upload">("reference");
-  const [posterSourceMode, setPosterSourceMode] = useState<"reference" | "upload">("reference");
-  const [videoPath, setVideoPath] = useState("");
-  const [posterPath, setPosterPath] = useState("");
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [posterFile, setPosterFile] = useState<File | null>(null);
+
+  // ── Directory scan ─────────────────────────────────────────────────────────
+  const [dirPath, setDirPath] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<FilmDirectoryScan | null>(null);
+  const [scanError, setScanError] = useState("");
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [videoPathValidation, setVideoPathValidation] = useState<PathValidationState>(idleValidationState);
-  const [posterPathValidation, setPosterPathValidation] = useState<PathValidationState>(idleValidationState);
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    const handleCancel = (event: Event) => {
-      event.preventDefault();
-      onClose();
-    };
-
+    if (!dialog) return;
+    const handleCancel = (event: Event) => { event.preventDefault(); onClose(); };
     dialog.addEventListener("cancel", handleCancel);
     dialog.showModal();
     document.body.style.overflow = "hidden";
-    listCatalogGenres("film")
-      .then((res) => setGenres(res.items))
-      .catch(() => {});
+    listCatalogGenres("film").then((res) => setGenres(res.items)).catch(() => {});
     return () => {
       dialog.removeEventListener("cancel", handleCancel);
-      if (dialog.open) {
-        dialog.close();
-      }
+      if (dialog.open) dialog.close();
       document.body.style.overflow = "";
     };
   }, [onClose]);
 
-  useEffect(() => {
-    if (videoSourceMode !== "reference") {
-      setVideoPathValidation(idleValidationState);
-      return;
-    }
-
-    const trimmedPath = videoPath.trim();
-    if (!trimmedPath) {
-      setVideoPathValidation(idleValidationState);
-      return;
-    }
-
-    let isMounted = true;
-    const timeoutId = window.setTimeout(() => {
-      setVideoPathValidation({
-        status: "validating",
-        message: "Verification du chemin...",
-      });
-
-      validateMediaPath(trimmedPath, "video")
-        .then((payload) => {
-          if (!isMounted) {
-            return;
-          }
-
-          setVideoPathValidation({
-            status: payload.found ? "valid" : "invalid",
-            message: payload.message,
-          });
-        })
-        .catch(() => {
-          if (!isMounted) {
-            return;
-          }
-
-          setVideoPathValidation({
-            status: "invalid",
-            message: "Aucun element trouve",
-          });
-        });
-    }, 250);
-
-    return () => {
-      isMounted = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [videoPath, videoSourceMode]);
-
-  useEffect(() => {
-    if (posterSourceMode !== "reference") {
-      setPosterPathValidation(idleValidationState);
-      return;
-    }
-
-    const trimmedPath = posterPath.trim();
-    if (!trimmedPath) {
-      setPosterPathValidation(idleValidationState);
-      return;
-    }
-
-    let isMounted = true;
-    const timeoutId = window.setTimeout(() => {
-      setPosterPathValidation({
-        status: "validating",
-        message: "Verification du chemin...",
-      });
-
-      validateMediaPath(trimmedPath, "poster")
-        .then((payload) => {
-          if (!isMounted) {
-            return;
-          }
-
-          setPosterPathValidation({
-            status: payload.found ? "valid" : "invalid",
-            message: payload.message,
-          });
-        })
-        .catch(() => {
-          if (!isMounted) {
-            return;
-          }
-
-          setPosterPathValidation({
-            status: "invalid",
-            message: "Aucun element trouve",
-          });
-        });
-    }, 250);
-
-    return () => {
-      isMounted = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [posterPath, posterSourceMode]);
-
   const toggleGenre = (id: string) => {
     setSelectedGenreIds((prev) =>
-      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id],
     );
   };
 
-  const validateFiles = () => {
-    if (
-      videoSourceMode === "upload" &&
-      videoFile &&
-      videoFile.size > UPLOAD_MAX_VIDEO_MB * 1024 * 1024
-    ) {
-      return `La video depasse la limite autorisee (${UPLOAD_MAX_VIDEO_MB} Mo max).`;
+  const handleScan = async () => {
+    const path = dirPath.trim();
+    if (!path) return;
+    setScanError("");
+    setScanResult(null);
+    setIsScanning(true);
+    try {
+      const res = await scanFilmPath(path);
+      setScanResult(res.scan);
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : "Scan impossible.");
+    } finally {
+      setIsScanning(false);
     }
-
-    if (
-      posterSourceMode === "upload" &&
-      posterFile &&
-      posterFile.size > UPLOAD_MAX_IMAGE_MB * 1024 * 1024
-    ) {
-      return `L'affiche depasse la limite autorisee (${UPLOAD_MAX_IMAGE_MB} Mo max).`;
-    }
-
-    return "";
   };
 
-  const isPathValidationPending =
-    videoPathValidation.status === "validating" || posterPathValidation.status === "validating";
-  const isRequiredUploadMissing =
-    (videoSourceMode === "upload" && !videoFile) ||
-    (posterSourceMode === "upload" && !posterFile);
-  const hasInvalidReference =
-    (videoSourceMode === "reference" &&
-      (!videoPath.trim() || videoPathValidation.status !== "valid")) ||
-    (posterSourceMode === "reference" &&
-      (!posterPath.trim() || posterPathValidation.status !== "valid"));
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     setError("");
+    if (!title.trim()) { setError("Le titre est obligatoire."); return; }
+    if (!synopsis.trim()) { setError("Le synopsis est obligatoire."); return; }
+    if (!dirPath.trim()) { setError("Le chemin du répertoire est obligatoire."); return; }
+    if (!scanResult) { setError("Scannez d'abord le répertoire."); return; }
+    if (!scanResult.videoRelativePath) { setError("Aucun fichier VIDEO trouvé dans ce répertoire."); return; }
 
-    if (!title.trim()) {
-      setError("Le titre est obligatoire.");
-      return;
+    setIsSubmitting(true);
+    try {
+      const result = await importFilmFromDir({
+        dirPath: dirPath.trim(),
+        title: title.trim(),
+        synopsis: synopsis.trim(),
+        releaseYear: releaseYear ? Number(releaseYear) : undefined,
+        status,
+        genreIds: selectedGenreIds.length > 0 ? selectedGenreIds : undefined,
+      });
+      bumpCatalogVersion();
+      onUploaded?.({ media: result.media });
+      onClose();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Création du média impossible.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (!synopsis.trim()) {
-      setError("Le synopsis est obligatoire.");
-      return;
-    }
-
-    if (videoSourceMode === "reference" && !videoPath.trim()) {
-      setError("Le chemin local de la video est obligatoire.");
-      return;
-    }
-
-    if (videoSourceMode === "reference" && videoPathValidation.status === "validating") {
-      setError("La verification du chemin video est encore en cours.");
-      return;
-    }
-
-    if (videoSourceMode === "reference" && videoPathValidation.status !== "valid") {
-      setError("Le chemin video est invalide.");
-      return;
-    }
-
-    if (videoSourceMode === "upload" && !videoFile) {
-      setError("Le fichier video est obligatoire.");
-      return;
-    }
-
-    if (posterSourceMode === "reference" && !posterPath.trim()) {
-      setError("Le chemin local de l'affiche est obligatoire.");
-      return;
-    }
-
-    if (posterSourceMode === "reference" && posterPathValidation.status === "validating") {
-      setError("La verification du chemin de l'affiche est encore en cours.");
-      return;
-    }
-
-    if (posterSourceMode === "reference" && posterPathValidation.status !== "valid") {
-      setError("Le chemin de l'affiche est invalide.");
-      return;
-    }
-
-    if (posterSourceMode === "upload" && !posterFile) {
-      setError("Le fichier affiche est obligatoire.");
-      return;
-    }
-
-    const sizeError = validateFiles();
-    if (sizeError) {
-      setError(sizeError);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.set("title", title.trim());
-    formData.set("synopsis", synopsis.trim());
-    formData.set("status", status);
-
-    if (releaseYear) {
-      formData.set("releaseYear", releaseYear);
-    }
-
-    if (durationMinutes) {
-      formData.set("durationMinutes", durationMinutes);
-    }
-
-    if (selectedGenreIds.length > 0) {
-      formData.set("genreIds", JSON.stringify(selectedGenreIds));
-    }
-
-    formData.set("videoSourceMode", videoSourceMode);
-    formData.set("posterSourceMode", posterSourceMode);
-
-    if (videoSourceMode === "reference") {
-      formData.set("videoPath", videoPath.trim());
-    } else if (videoFile) {
-      formData.set("video", videoFile);
-    }
-
-    if (posterSourceMode === "reference" && posterPath.trim()) {
-      formData.set("posterPath", posterPath.trim());
-    } else if (posterFile) {
-      formData.set("poster", posterFile);
-    }
-
-    if (videoSourceMode === "reference") {
-      setIsSubmitting(true);
-
-      try {
-        const result = await startUpload(title.trim(), formData);
-        onUploaded?.(result);
-        onClose();
-      } catch (submitError) {
-        setError(submitError instanceof Error ? submitError.message : "Creation du media impossible.");
-      } finally {
-        setIsSubmitting(false);
-      }
-
-      return;
-    }
-
-    startUpload(title.trim(), formData)
-      .then((result) => { onUploaded?.(result); })
-      .catch(() => {});
-    onClose();
   };
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDialogElement>) => {
-    if (event.target === dialogRef.current) {
-      onClose();
-    }
+    if (event.target === dialogRef.current) onClose();
   };
 
   return (
@@ -335,29 +114,24 @@ export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
             <p className="eyebrow">Administration</p>
             <h2>Ajouter un film</h2>
           </div>
-          <button
-            type="button"
-            className="upload-dialog-close"
-            onClick={onClose}
-            aria-label="Fermer"
-          >
-            x
+          <button type="button" className="upload-dialog-close" onClick={onClose} aria-label="Fermer">
+            ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="upload-form">
+        <div className="upload-form">
           {error && <p className="form-error">{error}</p>}
 
+          {/* ── Métadonnées ── */}
           <div className="form-grid">
             <label className="upload-field full-width">
               Titre <span className="required-mark">*</span>
               <input
                 type="text"
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Blade Runner 2049"
                 maxLength={200}
-                required
               />
             </label>
 
@@ -365,20 +139,19 @@ export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
               Synopsis <span className="required-mark">*</span>
               <textarea
                 value={synopsis}
-                onChange={(event) => setSynopsis(event.target.value)}
+                onChange={(e) => setSynopsis(e.target.value)}
                 placeholder="Description du film..."
                 maxLength={2000}
                 rows={3}
-                required
               />
             </label>
 
             <label className="upload-field">
-              Annee de sortie
+              Année de sortie
               <input
                 type="number"
                 value={releaseYear}
-                onChange={(event) => setReleaseYear(event.target.value)}
+                onChange={(e) => setReleaseYear(e.target.value)}
                 min={1888}
                 max={2100}
                 placeholder="2024"
@@ -386,23 +159,8 @@ export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
             </label>
 
             <label className="upload-field">
-              Duree (minutes)
-              <input
-                type="number"
-                value={durationMinutes}
-                onChange={(event) => setDurationMinutes(event.target.value)}
-                min={1}
-                max={999}
-                placeholder="120"
-              />
-            </label>
-
-            <label className="upload-field">
               Statut
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as "published" | "draft")}
-              >
+              <select value={status} onChange={(e) => setStatus(e.target.value as "published" | "draft")}>
                 <option value="published">Public</option>
                 <option value="draft">Brouillon</option>
               </select>
@@ -417,9 +175,7 @@ export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
                   <button
                     key={genre.id}
                     type="button"
-                    className={`genre-chip upload-genre-chip${
-                      selectedGenreIds.includes(genre.id) ? " is-selected" : ""
-                    }`}
+                    className={`genre-chip upload-genre-chip${selectedGenreIds.includes(genre.id) ? " is-selected" : ""}`}
                     onClick={() => toggleGenre(genre.id)}
                   >
                     {genre.name}
@@ -429,148 +185,75 @@ export function UploadPopup({ onClose, onUploaded }: UploadPopupProps) {
             </div>
           )}
 
-          <div className="upload-source-grid">
-            <section className="upload-source-panel">
-              <div className="upload-source-header">
-                <div>
-                  <strong>Video</strong>
-                </div>
-                <div className="source-mode-toggle" role="tablist" aria-label="Mode video">
-                  <button
-                    type="button"
-                    className={videoSourceMode === "reference" ? "is-active" : ""}
-                    onClick={() => setVideoSourceMode("reference")}
-                  >
-                    Chemin local
-                  </button>
-                  <button
-                    type="button"
-                    className={videoSourceMode === "upload" ? "is-active" : ""}
-                    onClick={() => setVideoSourceMode("upload")}
-                  >
-                    Importer
-                  </button>
-                </div>
-              </div>
+          <hr style={{ margin: "20px 0", border: "none", borderTop: "1px solid var(--border-color, #333)" }} />
 
-              {videoSourceMode === "reference" ? (
-                <label className="upload-field">
-                  Chemin local video <span className="required-mark">*</span>
-                  <input
-                    type="text"
-                    value={videoPath}
-                    onChange={(event) => setVideoPath(event.target.value)}
-                    placeholder="Ex: C:\\Films\\Blade Runner 2049.mp4 ou videos/blade-runner-2049.mp4"
-                    required
-                  />
-                  {videoPathValidation.status !== "idle" && (
-                    <p
-                      className={`path-feedback ${
-                        videoPathValidation.status === "valid"
-                          ? "is-valid"
-                          : videoPathValidation.status === "invalid"
-                            ? "is-invalid"
-                            : ""
-                      }`}
-                    >
-                      {videoPathValidation.message}
-                    </p>
-                  )}
-                </label>
-              ) : (
-                <FileUpload
-                  label="Fichier video"
-                  accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
-                  hint={`Cliquer pour selectionner (mp4, webm, mov) - max ${UPLOAD_MAX_VIDEO_MB} Mo`}
-                  file={videoFile}
-                  progress={null}
-                  onFileChange={setVideoFile}
-                />
-              )}
-            </section>
+          {/* ── Répertoire du film ── */}
+          <p className="upload-field-label" style={{ marginBottom: 10 }}>Répertoire du film</p>
+          <p className="muted" style={{ marginBottom: 12, fontSize: "0.85rem" }}>
+            Le répertoire doit contenir un fichier <code>VIDEO.*</code> (mp4, webm…) et optionnellement <code>POSTER.*</code> (jpg, png…).
+          </p>
 
-            <section className="upload-source-panel">
-              <div className="upload-source-header">
-                <div>
-                  <strong>Affiche <span className="required-mark">*</span></strong>
-                </div>
-                <div className="source-mode-toggle" role="tablist" aria-label="Mode affiche">
-                  <button
-                    type="button"
-                    className={posterSourceMode === "reference" ? "is-active" : ""}
-                    onClick={() => setPosterSourceMode("reference")}
-                  >
-                    Chemin local
-                  </button>
-                  <button
-                    type="button"
-                    className={posterSourceMode === "upload" ? "is-active" : ""}
-                    onClick={() => setPosterSourceMode("upload")}
-                  >
-                    Importer
-                  </button>
-                </div>
-              </div>
-
-              {posterSourceMode === "reference" ? (
-                <label className="upload-field">
-                  Chemin local affiche <span className="required-mark">*</span>
-                  <input
-                    type="text"
-                    value={posterPath}
-                    onChange={(event) => setPosterPath(event.target.value)}
-                    placeholder="Ex: C:\\Affiches\\blade-runner-2049.jpg ou posters/blade-runner-2049.webp"
-                  />
-                  {posterPathValidation.status !== "idle" && (
-                    <p
-                      className={`path-feedback ${
-                        posterPathValidation.status === "valid"
-                          ? "is-valid"
-                          : posterPathValidation.status === "invalid"
-                            ? "is-invalid"
-                            : ""
-                      }`}
-                    >
-                      {posterPathValidation.message}
-                    </p>
-                  )}
-                </label>
-              ) : (
-                <FileUpload
-                  label="Affiche obligatoire"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,.jpg,.jpeg,.png,.gif,.webp,.svg"
-                  hint={`Cliquer pour selectionner (jpeg, png, svg) - max ${UPLOAD_MAX_IMAGE_MB} Mo`}
-                  file={posterFile}
-                  progress={null}
-                  onFileChange={setPosterFile}
-                />
-              )}
-            </section>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
+            <label className="upload-field" style={{ flex: 1, marginBottom: 0 }}>
+              Chemin du répertoire <span className="required-mark">*</span>
+              <input
+                type="text"
+                value={dirPath}
+                onChange={(e) => { setDirPath(e.target.value); setScanResult(null); setScanError(""); }}
+                placeholder="Ex: FILMS/blade-runner-2049"
+              />
+            </label>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ alignSelf: "flex-end" }}
+              onClick={() => void handleScan()}
+              disabled={!dirPath.trim() || isScanning}
+            >
+              {isScanning ? "Scan..." : "Scanner"}
+            </button>
           </div>
 
-          <p className="upload-limit-note muted">{getUploadTooLargeMessage()}</p>
+          {scanError && <p className="form-error" style={{ marginTop: 6 }}>{scanError}</p>}
+
+          {scanResult && (
+            <div className="scan-preview-block" style={{ marginTop: 10, marginBottom: 14 }}>
+              {scanResult.videoRelativePath ? (
+                <p className="scan-preview-ok">✅ VIDEO détectée : {scanResult.videoRelativePath}</p>
+              ) : (
+                <p className="form-error">❌ Aucun fichier VIDEO trouvé (attendu : VIDEO.mp4 ou similaire)</p>
+              )}
+              {scanResult.posterRelativePath ? (
+                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                  <p className="scan-preview-ok">✅ Affiche trouvée</p>
+                  <img
+                    src={getAdminPreviewAssetUrl(scanResult.posterRelativePath)}
+                    alt="Aperçu affiche"
+                    className="scan-poster-preview"
+                  />
+                </div>
+              ) : (
+                <p className="muted" style={{ marginTop: 6, fontSize: "0.85rem" }}>Aucune affiche détectée (optionnel).</p>
+              )}
+            </div>
+          )}
+
           <p className="upload-limit-note muted">
-            En mode chemin local, le backend reference directement le fichier sans le copier.
+            La durée est détectée automatiquement depuis le fichier vidéo.
           </p>
 
           <div className="upload-form-actions">
-            <button type="button" className="secondary-button" onClick={onClose}>
-              Annuler
-            </button>
+            <button type="button" className="secondary-button" onClick={onClose}>Annuler</button>
             <button
-              type="submit"
+              type="button"
               className="primary-button"
-              disabled={
-                isSubmitting ||
-                isPathValidationPending ||
-                hasInvalidReference ||
-                isRequiredUploadMissing
-              }
+              disabled={isSubmitting || !scanResult?.videoRelativePath}
+              onClick={() => void handleSubmit()}
             >
-              {isSubmitting ? "Validation..." : "Lancer l'upload"}
+              {isSubmitting ? "Création..." : "Ajouter au catalogue"}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </dialog>
   );

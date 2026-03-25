@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
+import { FilmEditPopup } from "../components/upload/FilmEditPopup";
 import { useSession } from "../auth/useSession";
 import {
   deleteRating,
@@ -56,6 +57,8 @@ export function FilmDetailPage() {
   const [detail, setDetail] = useState<MediaDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [showEditPopup, setShowEditPopup] = useState(false);
 
   const [favorited, setFavorited] = useState(false);
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -104,7 +107,7 @@ export function FilmDetailPage() {
     };
     void load();
     return () => { isMounted = false; };
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   // Sauvegarde finale quand on quitte la page (navigation SPA)
   useEffect(() => {
@@ -264,6 +267,9 @@ export function FilmDetailPage() {
 
           {isAdmin && (
             <div className="admin-danger-zone">
+              <button type="button" className="secondary-button" onClick={() => setShowEditPopup(true)}>
+                Modifier contenu
+              </button>
               <button type="button" className="danger-button" onClick={() => void handleDelete()}>
                 Supprimer du catalogue
               </button>
@@ -379,7 +385,18 @@ export function FilmDetailPage() {
         )}
       </div>
 
-      
+      {showEditPopup && (
+        <FilmEditPopup
+          slug={item.slug}
+          title={item.title}
+          synopsis={item.synopsis}
+          releaseYear={item.releaseYear}
+          status={item.status}
+          genres={item.genres}
+          onClose={() => setShowEditPopup(false)}
+          onUpdated={() => setReloadKey((k) => k + 1)}
+        />
+      )}
     </section>
   );
 }

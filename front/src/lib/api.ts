@@ -210,11 +210,11 @@ const request = async <T>(path: string, init?: RequestInit) => {
     : null;
 
   if (!response.ok) {
-    throw new ApiClientError(
-      payload?.message ?? "API request failed",
-      response.status,
-      payload?.details,
-    );
+    const message =
+      response.status === 429
+        ? "Trop de requêtes — réessaye dans quelques instants."
+        : (payload?.message ?? "API request failed");
+    throw new ApiClientError(message, response.status, payload?.details);
   }
 
   return payload as T;
@@ -388,6 +388,7 @@ export type MediaListItem = {
   durationMinutes: number | null;
   posterPath: string | null;
   status: string;
+  genres: Array<{ id: string; name: string; slug: string }>;
 };
 
 export type FavoriteItem = MediaListItem & { favoritedAt: string };
@@ -595,10 +596,20 @@ export type SerieDetailResponse = {
   status: MediaStatus;
   releaseYear: number | null;
   hasPoster: boolean;
+  hasDirPath: boolean;
   createdAt: string;
   updatedAt: string;
   genres: MediaGenre[];
   seasons: SeasonItem[];
+};
+
+export type SeriesDirectoryScan = {
+  posterRelativePath: string | null;
+  seasons: Array<{
+    number: number;
+    title: string;
+    episodes: Array<{ number: number; title: string; relativePath: string }>;
+  }>;
 };
 
 export const getSerieDetail = (slug: string) =>
@@ -679,6 +690,118 @@ export const addAdminEpisode = (slug: string, seasonNumber: number, formData: Fo
     }
     return r.json() as Promise<{ episode: { id: string; number: number; title: string } }>;
   });
+
+export const createFilmByPath = (data: {
+  title: string;
+  synopsis: string;
+  videoPath: string;
+  posterPath?: string;
+  releaseYear?: number;
+  status: "published" | "draft" | "archived";
+  genreIds?: string[];
+}) =>
+  request<CreateMediaResult>("/admin/media", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export type FilmDirectoryScan = {
+  videoRelativePath: string | null;
+  posterRelativePath: string | null;
+};
+
+export const scanFilmPath = (dirPath: string) =>
+  request<{ scan: FilmDirectoryScan }>("/admin/films/scan-path", {
+    method: "POST",
+    body: JSON.stringify({ dirPath }),
+  });
+
+export const importFilmFromDir = (data: {
+  dirPath: string;
+  title: string;
+  synopsis: string;
+  releaseYear?: number;
+  status: "published" | "draft" | "archived";
+  genreIds?: string[];
+}) =>
+  request<{ media: MediaCardItem & { updatedAt: string }; scan: FilmDirectoryScan }>(
+    "/admin/films/import-from-dir",
+    { method: "POST", body: JSON.stringify(data) },
+  );
+
+export const updateFilmMeta = (
+  slug: string,
+  data: {
+    title?: string;
+    synopsis?: string;
+    releaseYear?: number | null;
+    status?: "draft" | "published" | "archived";
+    genreIds?: string[];
+    dirPath?: string;
+  },
+) =>
+  request<{ media: { id: string; slug: string; title: string }; scan: FilmDirectoryScan | null }>(
+    `/admin/films/${slug}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+  );
+
+export const getAdminFilmDirPath = (slug: string) =>
+  request<{ filmDirPath: string | null }>(`/admin/films/${slug}`, { method: "GET" });
+
+export const updateSeriesMeta = (
+  slug: string,
+  data: {
+    title?: string;
+    synopsis?: string;
+    releaseYear?: number | null;
+    status?: "draft" | "published" | "archived";
+    genreIds?: string[];
+  },
+) =>
+  request<{ serie: { id: string; slug: string; title: string } }>(
+    `/admin/series/${slug}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+  );
+
+export const getAdminPreviewAssetUrl = (relativePath: string) =>
+  `${API_BASE_URL}/admin/preview-asset?path=${encodeURIComponent(relativePath)}`;
+
+export const scanSeriesPath = (dirPath: string) =>
+  request<{ scan: SeriesDirectoryScan }>("/admin/series/scan-path", {
+    method: "POST",
+    body: JSON.stringify({ dirPath }),
+  });
+
+export const importSeriesFromDir = (data: {
+  dirPath: string;
+  title: string;
+  synopsis: string;
+  releaseYear?: number;
+  status: "published" | "draft" | "archived";
+  genreIds?: string[];
+}) =>
+  request<{ serie: { id: string; slug: string; title: string }; scan: SeriesDirectoryScan }>(
+    "/admin/series/import-from-dir",
+    { method: "POST", body: JSON.stringify(data) },
+  );
+
+export const refreshSeriesFromDir = (slug: string) =>
+  request<{ addedSeasons: number; addedEpisodes: number }>(
+    `/admin/series/${slug}/refresh`,
+    { method: "POST" },
+  );
+
+export const renameSeasonAdmin = (slug: string, seasonNumber: number, title: string) =>
+  request<{ season: { id: string; number: number; title: string } }>(
+    `/admin/series/${slug}/seasons/${seasonNumber}`,
+    { method: "PATCH", body: JSON.stringify({ title }) },
+  );
+
+export const renameEpisodeAdmin = (episodeId: string, title: string) =>
+  request<{ episode: { id: string; number: number; title: string } }>(
+    `/admin/episodes/${episodeId}`,
+    { method: "PATCH", body: JSON.stringify({ title }) },
+  );
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 

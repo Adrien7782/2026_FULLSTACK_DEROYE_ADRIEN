@@ -17,6 +17,7 @@ export function SeriesPage() {
   const { user } = useSession();
   const isAdmin = user?.role === "admin";
   const [showCreate, setShowCreate] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const search = searchParams.get("q") ?? "";
   const genre = searchParams.get("genre") ?? "";
@@ -55,7 +56,7 @@ export function SeriesPage() {
       .catch((e) => { if (isMounted) setError(e instanceof Error ? e.message : "Erreur de chargement"); })
       .finally(() => { if (isMounted) setIsLoading(false); });
     return () => { isMounted = false; };
-  }, [genre, search, status]);
+  }, [genre, search, status, reloadKey]);
 
   const handleSubmit = () => {
     const p = new URLSearchParams();
@@ -185,7 +186,8 @@ export function SeriesPage() {
         <SeriesCreatePopup
           onClose={() => setShowCreate(false)}
           onCreated={() => {
-            setSearchParams(new URLSearchParams());
+            setShowCreate(false);
+            setReloadKey((k) => k + 1);
           }}
         />
       )}

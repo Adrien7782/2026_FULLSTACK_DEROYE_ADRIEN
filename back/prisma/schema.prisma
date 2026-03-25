@@ -94,6 +94,8 @@ model Media {
   videoPath       String?
   posterPath      String?
   backdropPath    String?
+  seriesDirPath   String?
+  filmDirPath     String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   genres           Genre[]

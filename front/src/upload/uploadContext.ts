@@ -16,6 +16,7 @@ export type UploadContextValue = {
   catalogVersion: number;
   startUpload: (title: string, formData: FormData) => Promise<CreateMediaResult>;
   dismissJob: (id: string) => void;
+  bumpCatalogVersion: () => void;
 };
 
 export const UploadContext = createContext<UploadContextValue | null>(null);

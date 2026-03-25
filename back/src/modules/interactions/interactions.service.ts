@@ -23,6 +23,7 @@ export const listFavorites = async (userId: string) => {
         select: {
           id: true, slug: true, title: true, type: true, releaseYear: true,
           durationMinutes: true, posterPath: true, status: true,
+          genres: { select: { id: true, name: true, slug: true } },
         },
       },
     },
@@ -60,6 +61,7 @@ export const listWatchlist = async (userId: string) => {
         select: {
           id: true, slug: true, title: true, type: true, releaseYear: true,
           durationMinutes: true, posterPath: true, status: true,
+          genres: { select: { id: true, name: true, slug: true } },
         },
       },
     },

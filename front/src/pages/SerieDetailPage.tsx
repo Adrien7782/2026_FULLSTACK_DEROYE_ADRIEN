@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../auth/useSession";
 import {
-  addAdminEpisode,
-  addAdminSeason,
   deleteRating,
   getEpisodeProgress,
   getEpisodeStreamUrl,
@@ -24,6 +22,7 @@ import {
   type SeasonItem,
   type SerieDetailResponse,
 } from "../lib/api";
+import { SeriesEditPopup } from "../components/upload/SeriesEditPopup";
 
 const deleteSerieFromCatalog = (slug: string) =>
   fetch(`/api/admin/media/${slug}`, { method: "DELETE", credentials: "include" });
@@ -59,6 +58,7 @@ export function SerieDetailPage() {
 
   const [serie, setSerie] = useState<SerieDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState("");
 
   // Episode selection
@@ -79,19 +79,7 @@ export function SerieDetailPage() {
   const currentEpIdRef = useRef<string | null>(null);
 
   // Admin forms
-  const [showAddSeason, setShowAddSeason] = useState(false);
-  const [newSeasonNum, setNewSeasonNum] = useState("");
-  const [newSeasonTitle, setNewSeasonTitle] = useState("");
-  const [seasonFormError, setSeasonFormError] = useState("");
-
-  const [showAddEpisode, setShowAddEpisode] = useState(false);
-  const [epNum, setEpNum] = useState("");
-  const [epTitle, setEpTitle] = useState("");
-  const [epStatus, setEpStatus] = useState<"published" | "draft">("published");
-  const [epDuration, setEpDuration] = useState("");
-  const [epVideoFile, setEpVideoFile] = useState<File | null>(null);
-  const [epFormError, setEpFormError] = useState("");
-  const [epSubmitting, setEpSubmitting] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);
 
   // ─── Load serie + interactions ────────────────────────────────────────────
 
@@ -139,7 +127,7 @@ export function SerieDetailPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"))
       .finally(() => setIsLoading(false));
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   // ─── Load episode progress when selected episode changes ─────────────────
 
@@ -242,55 +230,6 @@ export function SerieDetailPage() {
     setRatings(ratingsRes.ratings);
   };
 
-  // ─── Admin handlers ───────────────────────────────────────────────────────
-
-  const handleAddSeason = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSeasonFormError("");
-    const num = parseInt(newSeasonNum, 10);
-    if (!num || num < 1) { setSeasonFormError("Numéro de saison invalide."); return; }
-    try {
-      await addAdminSeason(slug!, { number: num, title: newSeasonTitle || undefined });
-      const updated = await getSerieDetail(slug!);
-      setSerie(updated);
-      setShowAddSeason(false);
-      setNewSeasonNum(""); setNewSeasonTitle("");
-    } catch (err) {
-      setSeasonFormError(err instanceof Error ? err.message : "Erreur");
-    }
-  };
-
-  const handleAddEpisode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEpFormError("");
-    if (!serie) return;
-    const currentSeason = serie.seasons[selectedSeasonIdx];
-    if (!currentSeason) { setEpFormError("Sélectionne une saison d'abord."); return; }
-    const num = parseInt(epNum, 10);
-    if (!num || num < 1) { setEpFormError("Numéro d'épisode invalide."); return; }
-    if (!epTitle.trim()) { setEpFormError("Le titre est obligatoire."); return; }
-
-    const fd = new FormData();
-    fd.set("number", String(num));
-    fd.set("title", epTitle.trim());
-    fd.set("status", epStatus);
-    if (epDuration) fd.set("durationMinutes", epDuration);
-    if (epVideoFile) { fd.set("video", epVideoFile); fd.set("videoSourceMode", "upload"); }
-
-    setEpSubmitting(true);
-    try {
-      await addAdminEpisode(slug!, currentSeason.number, fd);
-      const updated = await getSerieDetail(slug!);
-      setSerie(updated);
-      setShowAddEpisode(false);
-      setEpNum(""); setEpTitle(""); setEpDuration(""); setEpVideoFile(null);
-    } catch (err) {
-      setEpFormError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setEpSubmitting(false);
-    }
-  };
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) return (
@@ -377,15 +316,9 @@ export function SerieDetailPage() {
           {isAdmin && (
             <div className="admin-danger-zone">
               <button type="button" className="secondary-button"
-                onClick={() => { setShowAddSeason(!showAddSeason); setShowAddEpisode(false); }}>
-                {showAddSeason ? "Annuler saison" : "+ Saison"}
+                onClick={() => setShowEditPopup(true)}>
+                Modifier contenu
               </button>
-              {serie.seasons.length > 0 && (
-                <button type="button" className="secondary-button"
-                  onClick={() => { setShowAddEpisode(!showAddEpisode); setShowAddSeason(false); }}>
-                  {showAddEpisode ? "Annuler épisode" : "+ Épisode"}
-                </button>
-              )}
               <button type="button" className="danger-button" onClick={() => void handleDelete()}>
                 Supprimer du catalogue
               </button>
@@ -504,77 +437,23 @@ export function SerieDetailPage() {
         )}
       </div>
 
-      {/* Admin — formulaires inline */}
-      {isAdmin && showAddSeason && (
-        <div className="panel">
-          <form onSubmit={(e) => void handleAddSeason(e)} className="admin-inline-form">
-            <h4>Nouvelle saison</h4>
-            {seasonFormError && <p className="form-error">{seasonFormError}</p>}
-            <div className="form-grid">
-              <label className="upload-field">
-                Numéro <span className="required-mark">*</span>
-                <input type="number" min={1} value={newSeasonNum}
-                  onChange={(e) => setNewSeasonNum(e.target.value)} required />
-              </label>
-              <label className="upload-field">
-                Titre (optionnel)
-                <input type="text" value={newSeasonTitle}
-                  onChange={(e) => setNewSeasonTitle(e.target.value)} maxLength={200} />
-              </label>
-            </div>
-            <div className="upload-form-actions">
-              <button type="button" className="secondary-button"
-                onClick={() => setShowAddSeason(false)}>Annuler</button>
-              <button type="submit" className="primary-button">Créer la saison</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {isAdmin && showAddEpisode && currentSeason && (
-        <div className="panel">
-          <form onSubmit={(e) => void handleAddEpisode(e)} className="admin-inline-form">
-            <h4>Nouvel épisode — Saison {currentSeason.number}</h4>
-            {epFormError && <p className="form-error">{epFormError}</p>}
-            <div className="form-grid">
-              <label className="upload-field">
-                Numéro <span className="required-mark">*</span>
-                <input type="number" min={1} value={epNum}
-                  onChange={(e) => setEpNum(e.target.value)} required />
-              </label>
-              <label className="upload-field">
-                Titre <span className="required-mark">*</span>
-                <input type="text" value={epTitle}
-                  onChange={(e) => setEpTitle(e.target.value)} maxLength={200} required />
-              </label>
-              <label className="upload-field">
-                Durée (min)
-                <input type="number" min={1} max={999} value={epDuration}
-                  onChange={(e) => setEpDuration(e.target.value)} />
-              </label>
-              <label className="upload-field">
-                Statut
-                <select value={epStatus}
-                  onChange={(e) => setEpStatus(e.target.value as "published" | "draft")}>
-                  <option value="published">Publié</option>
-                  <option value="draft">Brouillon</option>
-                </select>
-              </label>
-              <label className="upload-field full-width">
-                Fichier vidéo (optionnel)
-                <input type="file" accept="video/mp4,video/webm,.mp4,.webm,.mov"
-                  onChange={(e) => setEpVideoFile(e.target.files?.[0] ?? null)} />
-              </label>
-            </div>
-            <div className="upload-form-actions">
-              <button type="button" className="secondary-button"
-                onClick={() => setShowAddEpisode(false)}>Annuler</button>
-              <button type="submit" className="primary-button" disabled={epSubmitting}>
-                {epSubmitting ? "Création…" : "Créer l'épisode"}
-              </button>
-            </div>
-          </form>
-        </div>
+      {/* Admin — popup modifier contenu */}
+      {isAdmin && showEditPopup && serie && (
+        <SeriesEditPopup
+          slug={serie.slug}
+          title={serie.title}
+          synopsis={serie.synopsis}
+          releaseYear={serie.releaseYear}
+          status={serie.status}
+          genres={serie.genres}
+          hasDirPath={serie.hasDirPath}
+          seasons={serie.seasons}
+          onClose={() => setShowEditPopup(false)}
+          onUpdated={() => {
+            setShowEditPopup(false);
+            setReloadKey((k) => k + 1);
+          }}
+        />
       )}
 
       {/* Avis communauté */}

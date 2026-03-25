@@ -55,7 +55,10 @@ export function SessionProvider({ children }: SessionProviderProps) {
         setError("");
         return;
       }
-
+      // 429 or network error — don't clear the session, just ignore
+      if (error instanceof ApiClientError && (error.status === 429 || error.status === 0)) {
+        return;
+      }
       clearSessionState();
       setError(getErrorMessage(error));
     }

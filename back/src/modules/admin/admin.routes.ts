@@ -1,28 +1,33 @@
-import { unlink } from "node:fs/promises";
-import { join } from "node:path";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { extname, join } from "node:path";
 import { Router } from "express";
 import { z } from "zod";
 import { ApiError } from "../../lib/errors.js";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import {
-  UPLOAD_MAX_IMAGE_BYTES,
-  UPLOAD_MAX_VIDEO_BYTES,
-  mediaUpload,
   validateReferencedMediaPath,
+  resolveManagedStoragePath,
+  scanFilmDirectory,
 } from "../media/media.upload.js";
 import { createMediaBodySchema } from "../media/media.schemas.js";
-import { createMedia } from "../media/media.service.js";
+import { createMedia, importFilmFromDirectory, updateFilmMeta } from "../media/media.service.js";
 import {
   listAllSuggestions,
   updateSuggestionStatus,
 } from "../suggestions/suggestions.service.js";
 import {
   createSeriesBodySchema,
-  createSeasonBodySchema,
-  createEpisodeBodySchema,
 } from "../series/series.schemas.js";
-import { addSeason, addEpisode, createSeries } from "../series/series.service.js";
+import {
+  createSeries,
+  scanSeriesDirectory,
+  importSeriesFromDirectory,
+  refreshSeriesFromDirectory,
+  renameSeason,
+  renameEpisode,
+  updateSeriesMeta,
+} from "../series/series.service.js";
 
 export const adminRouter = Router();
 
@@ -54,107 +59,96 @@ adminRouter.post("/media/validate-path", (req, res) => {
   }
 });
 
-adminRouter.post(
-  "/media",
-  mediaUpload.fields([
-    { name: "video", maxCount: 1 },
-    { name: "poster", maxCount: 1 },
-  ]),
-  async (req, res) => {
-    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-    const videoFile = files?.["video"]?.[0];
-    const posterFile = files?.["poster"]?.[0];
+// Preview a file from DATA_DIRECTORY (admin only — used for poster preview before creation)
+adminRouter.get("/preview-asset", (req, res) => {
+  const rawPath = typeof req.query.path === "string" ? req.query.path : "";
+  if (!rawPath) throw new ApiError(400, "Paramètre path requis");
 
-    try {
-      if (videoFile && videoFile.size > UPLOAD_MAX_VIDEO_BYTES) {
-        throw new ApiError(
-          400,
-          `Vidéo trop grande. Maximum: ${env.UPLOAD_MAX_VIDEO_MB} Mo`,
-        );
-      }
-      if (posterFile && posterFile.size > UPLOAD_MAX_IMAGE_BYTES) {
-        throw new ApiError(
-          400,
-          `Image trop grande. Maximum: ${env.UPLOAD_MAX_IMAGE_MB} Mo`,
-        );
-      }
+  const absolutePath = resolveManagedStoragePath(rawPath);
+  if (!existsSync(absolutePath)) throw new ApiError(404, "Fichier introuvable");
+  if (!statSync(absolutePath).isFile()) throw new ApiError(400, "Pas un fichier");
 
-      const rawGenreIds: unknown = req.body.genreIds;
-      const genreIds =
-        typeof rawGenreIds === "string" && rawGenreIds.length > 0
-          ? (JSON.parse(rawGenreIds) as string[])
-          : Array.isArray(rawGenreIds)
-            ? (rawGenreIds as string[])
-            : undefined;
+  const ext = extname(absolutePath).toLowerCase();
+  const contentTypeMap: Record<string, string> = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+  };
+  res.setHeader("Content-Type", contentTypeMap[ext] ?? "application/octet-stream");
+  res.setHeader("Cache-Control", "private, max-age=60");
+  createReadStream(absolutePath).pipe(res);
+});
 
-      const body = createMediaBodySchema.parse({
-        title: req.body.title,
-        synopsis: req.body.synopsis,
-        releaseYear: req.body.releaseYear ? Number(req.body.releaseYear) : undefined,
-        durationMinutes: req.body.durationMinutes ? Number(req.body.durationMinutes) : undefined,
-        genreIds,
-        status: req.body.status,
-      });
+adminRouter.post("/media", async (req, res) => {
+  const body = createMediaBodySchema.parse({
+    title: req.body.title,
+    synopsis: req.body.synopsis,
+    releaseYear: req.body.releaseYear ? Number(req.body.releaseYear) : undefined,
+    genreIds: req.body.genreIds,
+    status: req.body.status,
+  });
 
-      const rawVideoSourceMode =
-        typeof req.body.videoSourceMode === "string" ? req.body.videoSourceMode : "reference";
-      const rawPosterSourceMode =
-        typeof req.body.posterSourceMode === "string" ? req.body.posterSourceMode : "reference";
-      const videoSourceMode = rawVideoSourceMode === "upload" ? "upload" : "reference";
-      const posterSourceMode = rawPosterSourceMode === "upload" ? "upload" : "reference";
-      const rawVideoPath = typeof req.body.videoPath === "string" ? req.body.videoPath : "";
-      const rawPosterPath = typeof req.body.posterPath === "string" ? req.body.posterPath : "";
+  const rawVideoPath = typeof req.body.videoPath === "string" ? req.body.videoPath.trim() : "";
+  const rawPosterPath = typeof req.body.posterPath === "string" ? req.body.posterPath.trim() : "";
 
-      if (videoSourceMode === "reference" && videoFile) {
-        await unlink(videoFile.path).catch(() => {});
-      }
+  if (!rawVideoPath) throw new ApiError(400, "Le chemin vidéo est obligatoire.");
 
-      if (posterSourceMode === "reference" && posterFile) {
-        await unlink(posterFile.path).catch(() => {});
-      }
+  const videoPath = validateReferencedMediaPath(rawVideoPath, "video");
+  const posterPath = rawPosterPath ? validateReferencedMediaPath(rawPosterPath, "poster") : undefined;
 
-      if (!videoFile && videoSourceMode !== "reference") {
-        throw new ApiError(400, "Le fichier video est obligatoire.");
-      }
+  const media = await createMedia({ ...body, videoPath, posterPath });
+  res.status(201).json({ media });
+});
 
-      if (!videoFile && !rawVideoPath.trim()) {
-        throw new ApiError(400, "Renseigne un chemin video local ou importe un fichier.");
-      }
+// ─── Films ────────────────────────────────────────────────────────────────────
 
-      if (!posterFile && !rawPosterPath.trim()) {
-        throw new ApiError(400, "Renseigne un chemin d'affiche local ou importe un fichier.");
-      }
+// Get film admin info (filmDirPath)
+adminRouter.get("/films/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const media = await prisma.media.findFirst({
+    where: { slug, type: "film" },
+    select: { filmDirPath: true },
+  });
+  if (!media) throw new ApiError(404, "Film introuvable");
+  res.json({ filmDirPath: media.filmDirPath });
+});
 
-      if (!posterFile && posterSourceMode !== "reference") {
-        throw new ApiError(400, "Le fichier affiche est obligatoire.");
-      }
+// Scan a film directory path
+adminRouter.post("/films/scan-path", (req, res) => {
+  const { dirPath } = z.object({ dirPath: z.string().trim().min(1) }).parse(req.body);
+  const scan = scanFilmDirectory(dirPath);
+  res.json({ scan });
+});
 
-      const videoPath =
-        videoSourceMode === "upload"
-          ? videoFile
-            ? `videos/${videoFile.filename}`
-            : undefined
-          : validateReferencedMediaPath(rawVideoPath, "video");
+// Import a film from a directory path (auto-scan)
+adminRouter.post("/films/import-from-dir", async (req, res) => {
+  const body = z.object({
+    dirPath: z.string().trim().min(1),
+    title: z.string().min(1).max(200),
+    synopsis: z.string().min(1).max(2000),
+    releaseYear: z.number().int().min(1888).max(2100).optional(),
+    status: z.enum(["draft", "published", "archived"]).default("published"),
+    genreIds: z.array(z.string().uuid()).optional(),
+  }).parse(req.body);
 
-      const posterPath =
-        posterSourceMode === "upload"
-          ? posterFile
-            ? `posters/${posterFile.filename}`
-            : undefined
-          : rawPosterPath.trim()
-            ? validateReferencedMediaPath(rawPosterPath, "poster")
-            : undefined;
+  const result = await importFilmFromDirectory(body.dirPath, body);
+  res.status(201).json(result);
+});
 
-      const media = await createMedia({ ...body, videoPath, posterPath });
+// Update film metadata (+ optional new dir path)
+adminRouter.patch("/films/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const body = z.object({
+    title: z.string().min(1).max(200).optional(),
+    synopsis: z.string().min(1).max(2000).optional(),
+    releaseYear: z.number().int().min(1888).max(2100).nullable().optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
+    genreIds: z.array(z.string().uuid()).optional(),
+    dirPath: z.string().trim().min(1).nullable().optional(),
+  }).parse(req.body);
 
-      res.status(201).json({ media });
-    } catch (error) {
-      if (videoFile) await unlink(videoFile.path).catch(() => {});
-      if (posterFile) await unlink(posterFile.path).catch(() => {});
-      throw error;
-    }
-  },
-);
+  const result = await updateFilmMeta(slug, body);
+  res.json(result);
+});
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 
@@ -223,106 +217,78 @@ adminRouter.get("/media", async (req, res) => {
 
 // ─── Séries ──────────────────────────────────────────────────────────────────
 
-adminRouter.post(
-  "/series",
-  mediaUpload.fields([{ name: "poster", maxCount: 1 }]),
-  async (req, res) => {
-    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-    const posterFile = files?.["poster"]?.[0];
-
-    try {
-      if (posterFile && posterFile.size > UPLOAD_MAX_IMAGE_BYTES) {
-        throw new ApiError(400, `Image trop grande. Maximum: ${env.UPLOAD_MAX_IMAGE_MB} Mo`);
-      }
-
-      const body = createSeriesBodySchema.parse({
-        title: req.body.title,
-        synopsis: req.body.synopsis,
-        releaseYear: req.body.releaseYear ? Number(req.body.releaseYear) : undefined,
-        status: req.body.status,
-        genreIds: req.body.genreIds
-          ? typeof req.body.genreIds === "string"
-            ? JSON.parse(req.body.genreIds)
-            : req.body.genreIds
-          : undefined,
-      });
-
-      const rawPosterPath = typeof req.body.posterPath === "string" ? req.body.posterPath : "";
-      const posterSourceMode = req.body.posterSourceMode === "upload" ? "upload" : "reference";
-      if (posterSourceMode === "reference" && posterFile) {
-        await unlink(posterFile.path).catch(() => {});
-      }
-
-      const posterPath =
-        posterSourceMode === "upload"
-          ? posterFile ? `posters/${posterFile.filename}` : undefined
-          : rawPosterPath.trim()
-            ? validateReferencedMediaPath(rawPosterPath, "poster")
-            : undefined;
-
-      const serie = await createSeries({ ...body, posterPath });
-      res.status(201).json({ serie });
-    } catch (error) {
-      if (posterFile) await unlink(posterFile.path).catch(() => {});
-      throw error;
-    }
-  },
-);
-
-adminRouter.post("/series/:slug/seasons", async (req, res) => {
-  const { slug } = req.params;
-  const body = createSeasonBodySchema.parse({
-    number: Number(req.body.number),
-    title: req.body.title,
-    synopsis: req.body.synopsis,
-  });
-  const season = await addSeason(slug, body);
-  res.status(201).json({ season });
+// Scan a directory path and return detected seasons/episodes structure
+adminRouter.post("/series/scan-path", async (req, res) => {
+  const { dirPath } = z.object({ dirPath: z.string().trim().min(1) }).parse(req.body);
+  const scan = scanSeriesDirectory(dirPath);
+  res.json({ scan });
 });
 
-adminRouter.post(
-  "/series/:slug/seasons/:seasonNumber/episodes",
-  mediaUpload.fields([{ name: "video", maxCount: 1 }]),
-  async (req, res) => {
-    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-    const videoFile = files?.["video"]?.[0];
-    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
-    const seasonNumber = Number(req.params.seasonNumber);
+// Import a series from a directory path (auto-scan)
+adminRouter.post("/series/import-from-dir", async (req, res) => {
+  const body = z.object({
+    dirPath: z.string().trim().min(1),
+    title: z.string().min(1).max(200),
+    synopsis: z.string().min(1).max(2000),
+    releaseYear: z.number().int().min(1888).max(2100).optional(),
+    status: z.enum(["draft", "published", "archived"]).default("published"),
+    genreIds: z.array(z.string().uuid()).optional(),
+  }).parse(req.body);
 
-    try {
-      if (videoFile && videoFile.size > UPLOAD_MAX_VIDEO_BYTES) {
-        throw new ApiError(400, `Vidéo trop grande. Maximum: ${env.UPLOAD_MAX_VIDEO_MB} Mo`);
-      }
+  const result = await importSeriesFromDirectory(body.dirPath, body);
+  res.status(201).json({ serie: result.media, scan: result.scan });
+});
 
-      const body = createEpisodeBodySchema.parse({
-        number: Number(req.body.number),
-        title: req.body.title,
-        synopsis: req.body.synopsis,
-        durationMinutes: req.body.durationMinutes ? Number(req.body.durationMinutes) : undefined,
-        status: req.body.status,
-      });
+// Refresh series from stored directory path (add new seasons/episodes)
+adminRouter.post("/series/:slug/refresh", async (req, res) => {
+  const { slug } = req.params;
+  const result = await refreshSeriesFromDirectory(slug);
+  res.json(result);
+});
 
-      const rawVideoPath = typeof req.body.videoPath === "string" ? req.body.videoPath : "";
-      const videoSourceMode = req.body.videoSourceMode === "upload" ? "upload" : "reference";
-      if (videoSourceMode === "reference" && videoFile) {
-        await unlink(videoFile.path).catch(() => {});
-      }
+// Rename a season
+adminRouter.patch("/series/:slug/seasons/:seasonNumber", async (req, res) => {
+  const { slug } = req.params;
+  const seasonNumber = Number(req.params.seasonNumber);
+  const { title } = z.object({ title: z.string().min(1).max(200) }).parse(req.body);
+  const season = await renameSeason(slug, seasonNumber, title);
+  res.json({ season });
+});
 
-      const videoPath =
-        videoSourceMode === "upload"
-          ? videoFile ? `videos/${videoFile.filename}` : undefined
-          : rawVideoPath.trim()
-            ? validateReferencedMediaPath(rawVideoPath, "video")
-            : undefined;
+// Rename an episode
+adminRouter.patch("/episodes/:episodeId", async (req, res) => {
+  const { episodeId } = req.params;
+  const { title } = z.object({ title: z.string().min(1).max(200) }).parse(req.body);
+  const episode = await renameEpisode(episodeId, title);
+  res.json({ episode });
+});
 
-      const episode = await addEpisode(slug, seasonNumber, { ...body, videoPath });
-      res.status(201).json({ episode });
-    } catch (error) {
-      if (videoFile) await unlink(videoFile.path).catch(() => {});
-      throw error;
-    }
-  },
-);
+// Metadata-only series creation (legacy — series are now imported via /import-from-dir)
+adminRouter.post("/series", async (req, res) => {
+  const body = createSeriesBodySchema.parse({
+    title: req.body.title,
+    synopsis: req.body.synopsis,
+    releaseYear: req.body.releaseYear ? Number(req.body.releaseYear) : undefined,
+    status: req.body.status,
+    genreIds: req.body.genreIds,
+  });
+  const serie = await createSeries({ ...body });
+  res.status(201).json({ serie });
+});
+
+// Update series metadata
+adminRouter.patch("/series/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const body = z.object({
+    title: z.string().min(1).max(200).optional(),
+    synopsis: z.string().min(1).max(2000).optional(),
+    releaseYear: z.number().int().min(1888).max(2100).nullable().optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
+    genreIds: z.array(z.string().uuid()).optional(),
+  }).parse(req.body);
+  const serie = await updateSeriesMeta(slug, body);
+  res.json({ serie });
+});
 
 // ─── Suppression média ────────────────────────────────────────────────────────
 
@@ -331,15 +297,7 @@ adminRouter.delete("/media/:slug", async (req, res) => {
   const media = await prisma.media.findUnique({ where: { slug } });
   if (!media) throw new ApiError(404, "Média introuvable");
 
-  // Suppression des fichiers physiques (non bloquante)
-  if (media.videoPath) {
-    await unlink(join(env.DATA_DIRECTORY, media.videoPath)).catch(() => {});
-  }
-  if (media.posterPath) {
-    await unlink(join(env.DATA_DIRECTORY, media.posterPath)).catch(() => {});
-  }
-
-  // Suppression en base (cascade sur favoris, watchlist, notes, playback)
+  // Suppression en base uniquement — les fichiers restent sur le disque (gérés par l'utilisateur)
   await prisma.media.delete({ where: { slug } });
 
   res.status(204).end();

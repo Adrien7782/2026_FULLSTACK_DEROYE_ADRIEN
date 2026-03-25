@@ -1,6 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { ApiError } from "../../lib/errors.js";
+import { getVideoDuration, resolveManagedStoragePath, scanFilmDirectory, type FilmDirectoryScan } from "./media.upload.js";
 import type { z } from "zod";
 import type { createMediaBodySchema, mediaGenresQuerySchema, mediaListQuerySchema } from "./media.schemas.js";
 
@@ -271,6 +272,17 @@ export const createMedia = async (input: CreateMediaInput) => {
     slug = `${baseSlug}-${attempt}`;
   }
 
+  // Auto-detect duration from video file if not provided
+  let durationMinutes = input.durationMinutes;
+  if (!durationMinutes && input.videoPath) {
+    try {
+      const absPath = resolveManagedStoragePath(input.videoPath);
+      durationMinutes = getVideoDuration(absPath) ?? undefined;
+    } catch {
+      // Ignore path resolution errors — duration stays null
+    }
+  }
+
   const media = await prisma.media.create({
     data: {
       slug,
@@ -279,7 +291,7 @@ export const createMedia = async (input: CreateMediaInput) => {
       type: "film",
       status: input.status,
       releaseYear: input.releaseYear,
-      durationMinutes: input.durationMinutes,
+      durationMinutes,
       videoPath: input.videoPath,
       posterPath: input.posterPath,
       ...(input.genreIds?.length
@@ -293,6 +305,108 @@ export const createMedia = async (input: CreateMediaInput) => {
     ...mapMediaCard(media),
     updatedAt: media.updatedAt,
   };
+};
+
+export const importFilmFromDirectory = async (
+  dirPath: string,
+  input: {
+    title: string;
+    synopsis: string;
+    status: "draft" | "published" | "archived";
+    releaseYear?: number;
+    genreIds?: string[];
+  },
+) => {
+  const scan = scanFilmDirectory(dirPath);
+
+  if (!scan.videoRelativePath) {
+    throw new ApiError(400, "Aucun fichier VIDEO trouvé dans ce répertoire (attendu : VIDEO.mp4 ou similaire)");
+  }
+
+  const absVideoPath = resolveManagedStoragePath(scan.videoRelativePath);
+  const durationMinutes = getVideoDuration(absVideoPath) ?? undefined;
+
+  const baseSlug = slugify(input.title);
+  let slug = baseSlug;
+  for (let attempt = 1; ; attempt++) {
+    const existing = await prisma.media.findUnique({ where: { slug } });
+    if (!existing) break;
+    slug = `${baseSlug}-${attempt}`;
+  }
+
+  const media = await prisma.media.create({
+    data: {
+      slug,
+      title: input.title,
+      synopsis: input.synopsis,
+      type: "film",
+      status: input.status,
+      releaseYear: input.releaseYear,
+      durationMinutes,
+      videoPath: scan.videoRelativePath,
+      posterPath: scan.posterRelativePath ?? undefined,
+      filmDirPath: dirPath,
+      ...(input.genreIds?.length
+        ? { genres: { connect: input.genreIds.map((id) => ({ id })) } }
+        : {}),
+    },
+    select: mediaDetailSelect,
+  });
+
+  return {
+    media: { ...mapMediaCard(media), updatedAt: media.updatedAt },
+    scan,
+  };
+};
+
+export const updateFilmMeta = async (
+  slug: string,
+  input: {
+    title?: string;
+    synopsis?: string;
+    releaseYear?: number | null;
+    status?: "draft" | "published" | "archived";
+    genreIds?: string[];
+    dirPath?: string | null;
+  },
+) => {
+  const media = await prisma.media.findFirst({ where: { slug, type: "film" } });
+  if (!media) throw new ApiError(404, "Film introuvable");
+
+  let scan: FilmDirectoryScan | null = null;
+  const dirUpdate: {
+    videoPath?: string;
+    posterPath?: string | null;
+    durationMinutes?: number | null;
+    filmDirPath?: string;
+  } = {};
+
+  if (input.dirPath) {
+    scan = scanFilmDirectory(input.dirPath);
+    if (!scan.videoRelativePath) {
+      throw new ApiError(400, "Aucun fichier VIDEO trouvé dans ce répertoire");
+    }
+    const absVideoPath = resolveManagedStoragePath(scan.videoRelativePath);
+    dirUpdate.videoPath = scan.videoRelativePath;
+    dirUpdate.posterPath = scan.posterRelativePath;
+    dirUpdate.durationMinutes = getVideoDuration(absVideoPath);
+    dirUpdate.filmDirPath = input.dirPath;
+  }
+
+  const updated = await prisma.media.update({
+    where: { slug },
+    data: {
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.synopsis !== undefined ? { synopsis: input.synopsis } : {}),
+      ...(input.releaseYear !== undefined ? { releaseYear: input.releaseYear } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
+      ...dirUpdate,
+      ...(input.genreIds !== undefined ? { genres: { set: input.genreIds.map((id) => ({ id })) } } : {}),
+    },
+    select: { id: true, slug: true, title: true },
+  });
+
+  return { media: updated, scan };
 };
 
 export const getMediaDetail = async (slug: string, viewerRole?: ViewerRole) => {

@@ -40,8 +40,12 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setJobs((prev) => prev.filter((j) => j.id !== id));
   }, []);
 
+  const bumpCatalogVersion = useCallback(() => {
+    setCatalogVersion((v) => v + 1);
+  }, []);
+
   return (
-    <UploadContext value={{ jobs, catalogVersion, startUpload, dismissJob }}>
+    <UploadContext value={{ jobs, catalogVersion, startUpload, dismissJob, bumpCatalogVersion }}>
       {children}
     </UploadContext>
   );
