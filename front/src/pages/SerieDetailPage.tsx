@@ -23,6 +23,7 @@ import {
   type SerieDetailResponse,
 } from "../lib/api";
 import { SeriesEditPopup } from "../components/upload/SeriesEditPopup";
+import { RecommendationPopup } from "../components/social/RecommendationPopup";
 
 const deleteSerieFromCatalog = (slug: string) =>
   fetch(`/api/admin/media/${slug}`, { method: "DELETE", credentials: "include" });
@@ -80,6 +81,7 @@ export function SerieDetailPage() {
 
   // Admin forms
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showRecoPopup, setShowRecoPopup] = useState(false);
 
   // ─── Load serie + interactions ────────────────────────────────────────────
 
@@ -290,6 +292,9 @@ export function SerieDetailPage() {
               onClick={() => void handleToggleWatchlist()}>
               {inWatchlist ? "✓" : "+"} Ma liste
             </button>
+            <button type="button" className="icon-btn" onClick={() => setShowRecoPopup(true)}>
+              ⭐ Mettre en avant
+            </button>
             <div className="rating-block">
               <StarRating value={userRating} onChange={(v) => void handleRatingChange(v)} />
               {avgRating && avgRating.count > 0 && (
@@ -436,6 +441,15 @@ export function SerieDetailPage() {
           </>
         )}
       </div>
+
+      {showRecoPopup && serie && (
+        <RecommendationPopup
+          mediaId={serie.id}
+          mediaTitle={serie.title}
+          onClose={() => setShowRecoPopup(false)}
+          onSuccess={() => {}}
+        />
+      )}
 
       {/* Admin — popup modifier contenu */}
       {isAdmin && showEditPopup && serie && (

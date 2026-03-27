@@ -57,6 +57,8 @@ export const updateProfileSchema = z
       return value;
     }, z.string().url().max(500).nullable().optional()),
     isLikesPrivate: z.boolean().optional(),
+    isPublic: z.boolean().optional(),
+    notifyOnNewMedia: z.boolean().optional(),
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: "At least one field must be provided",

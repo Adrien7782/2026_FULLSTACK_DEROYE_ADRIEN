@@ -26,6 +26,8 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
   const [lastName, setLastName] = useState(user.lastName ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
   const [isLikesPrivate, setIsLikesPrivate] = useState(user.isLikesPrivate);
+  const [isPublic, setIsPublic] = useState(user.isPublic);
+  const [notifyOnNewMedia, setNotifyOnNewMedia] = useState(user.notifyOnNewMedia);
   const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -41,6 +43,8 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
         lastName: lastName || null,
         avatarUrl: avatarUrl || null,
         isLikesPrivate,
+        isPublic,
+        notifyOnNewMedia,
       });
 
       setSuccessMessage("Profil mis à jour.");
@@ -134,6 +138,24 @@ function ProfileEditor({ user, session }: ProfileEditorProps) {
                 onChange={(event) => setIsLikesPrivate(event.target.checked)}
               />
               <span>Masquer mes likes aux autres utilisateurs</span>
+            </label>
+
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(event) => setIsPublic(event.target.checked)}
+              />
+              <span>Profil public (visible et suivable par tous)</span>
+            </label>
+
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={notifyOnNewMedia}
+                onChange={(event) => setNotifyOnNewMedia(event.target.checked)}
+              />
+              <span>Me notifier lors de l&apos;ajout de médias sur la plateforme</span>
             </label>
 
             {(error || successMessage) && (

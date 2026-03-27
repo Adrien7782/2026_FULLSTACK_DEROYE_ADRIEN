@@ -21,6 +21,7 @@ import { SerieDetailPage } from "../pages/SerieDetailPage";
 import { SeriesPage } from "../pages/SeriesPage";
 import { SuggestionsPage } from "../pages/SuggestionsPage";
 import { UserProfilePage } from "../pages/UserProfilePage";
+import { UsersSearchPage } from "../pages/UsersSearchPage";
 import { WatchlistPage } from "../pages/WatchlistPage";
 
 export const appRouter = createBrowserRouter([
@@ -55,6 +56,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "history",
         element: <RequireAuth><HistoryPage /></RequireAuth>,
+      },
+      {
+        path: "users",
+        element: <RequireAuth><UsersSearchPage /></RequireAuth>,
       },
       {
         path: "users/:username",

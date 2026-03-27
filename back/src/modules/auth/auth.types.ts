@@ -8,6 +8,8 @@ export type PublicUser = {
   lastName: string | null;
   avatarUrl: string | null;
   isLikesPrivate: boolean;
+  isPublic: boolean;
+  notifyOnNewMedia: boolean;
   role: UserRoleValue;
   createdAt: Date;
   updatedAt: Date;

@@ -8,13 +8,14 @@ import { notificationsRouter } from "../modules/notifications/notifications.rout
 import { seriesRouter } from "../modules/series/series.routes.js";
 import { suggestionsRouter } from "../modules/suggestions/suggestions.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
+import { socialRouter } from "../modules/social/social.routes.js";
 
 export const apiRouter = Router();
 
 apiRouter.get("/", (_req, res) => {
   res.status(200).json({
     message: "StreamAdy API root",
-    modules: ["auth", "users", "media", "series", "suggestions", "admin", "interactions", "notifications"],
+    modules: ["auth", "users", "media", "series", "suggestions", "admin", "interactions", "notifications", "social"],
   });
 });
 
@@ -26,3 +27,4 @@ apiRouter.use("/suggestions", requireAuth, suggestionsRouter);
 apiRouter.use("/admin", requireAuth, requireAdmin, adminRouter);
 apiRouter.use("/me", requireAuth, interactionsRouter);
 apiRouter.use("/notifications", requireAuth, notificationsRouter);
+apiRouter.use("/social", socialRouter);

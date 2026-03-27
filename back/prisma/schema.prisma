@@ -41,6 +41,15 @@ enum NotificationType {
   suggestion_refused
   suggestion_processed
   new_episode
+  follow_request
+  follow_accepted
+  new_media
+  new_recommendation
+}
+
+enum FollowStatus {
+  pending
+  accepted
 }
 
 model User {
@@ -50,11 +59,13 @@ model User {
   firstName      String?
   lastName       String?
   avatarUrl      String?
-  isLikesPrivate Boolean   @default(false)
-  passwordHash   String    @map("password")
-  role           UserRole  @default(standard)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isLikesPrivate   Boolean   @default(false)
+  isPublic         Boolean   @default(true)
+  notifyOnNewMedia Boolean   @default(false)
+  passwordHash     String    @map("password")
+  role             UserRole  @default(standard)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   sessions         Session[]
   favorites        Favorite[]
   watchlist        WatchlistItem[]
@@ -63,6 +74,9 @@ model User {
   suggestions      Suggestion[]
   notifications    Notification[]
   episodeProgress  EpisodePlaybackProgress[]
+  followers        Follow[]              @relation("Followed")
+  following        Follow[]              @relation("Follower")
+  recommendations  MediaRecommendation[]
 }
 
 model Session {
@@ -105,6 +119,7 @@ model Media {
   playbackProgress PlaybackProgress[]
   suggestions      Suggestion[]
   serie            Serie?
+  recommendations  MediaRecommendation[]
 
   @@index([type, status, catalogIndex])
 }
@@ -255,9 +270,39 @@ model Notification {
   body      String?
   isRead    Boolean          @default(false)
   link      String?
+  relatedId String?
   createdAt DateTime         @default(now())
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+model Follow {
+  id         String       @id @default(uuid())
+  followerId String
+  followedId String
+  status     FollowStatus @default(accepted)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  follower   User         @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followed   User         @relation("Followed", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followedId])
+  @@index([followerId])
+  @@index([followedId])
+}
+
+model MediaRecommendation {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  mediaId   String
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@index([createdAt])
 }

@@ -348,26 +348,54 @@ Objectifs:
 - Ajouter la generation de notifications sur les evenements retenus.
 - Afficher un centre de notifications dans l'interface.
 
-## Phase 8 - V2 profils publics et recherche utilisateurs
+## Phase 8 - V3 Social, Abonnements & Recommandations
 
 ### Objectif
 
-Ajouter la dimension sociale de consultation des profils.
+Ajouter une dimension sociale complète : profils publics/privés, système d'abonnement entre utilisateurs,
+recommandations de médias affichées sur la page d'accueil, et notifications associées.
 
-### Sprint 8.1 - Profils publics
+### Sprint 8.1 - Schéma Prisma + Backend
 
-Objectifs:
+Objectifs backend:
 
-- Exposer un profil public utilisateur.
-- Rendre visible la watchlist et les favoris selon les regles definies.
-- Permettre l'acces au profil via username ou avatar.
+- Ajouter `isPublic` et `notifyOnNewMedia` sur `User`.
+- Ajouter `relatedId` sur `Notification`.
+- Ajouter 4 nouvelles valeurs à `NotificationType`: `follow_request`, `follow_accepted`, `new_media`, `new_recommendation`.
+- Créer l'enum `FollowStatus` (`pending`, `accepted`) et le modèle `Follow`.
+- Créer le modèle `MediaRecommendation` (unique par userId).
+- Créer le module `social` avec service + routes (follow, recommendations).
+- Enrichir `GET /users/by/:username` (followerCount, followingCount, followStatus, currentRecommendation, favorites).
+- Ajouter `GET /users/search?q=`.
+- Accepter `isPublic` et `notifyOnNewMedia` dans `PATCH /users/me`.
+- Envoyer notification `new_media` après chaque création de média par un admin.
 
-### Sprint 8.2 - Recherche utilisateurs
+Sorties attendues:
 
-Objectifs:
+- Un utilisateur peut suivre / se désabonner d'un autre.
+- Les demandes de suivi (profil privé) génèrent une notification acceptabe/refusable.
+- Un utilisateur peut mettre en avant un média avec un commentaire.
+- Les followers reçoivent une notification `new_recommendation` à chaque mise en avant.
+- Les utilisateurs opt-in reçoivent `new_media` à chaque ajout de média.
 
-- Ajouter une recherche d'utilisateurs.
-- Integrer cette recherche au composant global de navigation.
+### Sprint 8.2 - Frontend
+
+Objectifs frontend:
+
+- Ajouter types et fonctions dans `api.ts` (FollowStatus, RecommendationItem, PublicUserProfile).
+- HomePage : section "Recommandés par la communauté" avec RecommendationCard.
+- UserProfilePage : enrichi (follow button, compteurs, recommandation courante, favoris).
+- Nouvelle page UsersSearchPage à `/users` avec champ de recherche.
+- ProfilePage : ajout checkboxes `isPublic` et `notifyOnNewMedia`.
+- NotificationsPage : nouveaux types avec icônes + boutons Accepter/Refuser pour `follow_request`.
+- FilmDetailPage + SerieDetailPage : bouton "⭐ Mettre en avant" ouvrant RecommendationPopup.
+- AppLayout : lien "Utilisateurs" dans la nav.
+
+Sorties attendues:
+
+- Flux follow end-to-end (public et privé avec demande).
+- Recommandations visibles sur la homepage pour tous les utilisateurs.
+- Popup de recommandation avec avertissement si remplacement d'une recommandation existante.
 
 
 ## Travaux transverses a maintenir tout au long du projet

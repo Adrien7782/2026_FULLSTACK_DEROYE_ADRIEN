@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
-import { getCatalogHome, type CatalogHomeResponse } from "../lib/api";
+import { RecommendationCard } from "../components/social/RecommendationCard";
+import { getCatalogHome, listRecommendations, type CatalogHomeResponse, type RecommendationItem } from "../lib/api";
 import { useUpload } from "../upload/useUpload";
 
 export function HomePage() {
   const { catalogVersion } = useUpload();
   const [catalog, setCatalog] = useState<CatalogHomeResponse | null>(null);
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -18,23 +20,20 @@ export function HomePage() {
       setError("");
 
       try {
-        const catalogPayload = await getCatalogHome();
+        const [catalogPayload, recoPayload] = await Promise.all([
+          getCatalogHome(),
+          listRecommendations().catch(() => ({ items: [] })),
+        ]);
 
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         setCatalog(catalogPayload);
+        setRecommendations(recoPayload.items.slice(0, 6));
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
+        if (!isMounted) return;
         setError(error instanceof Error ? error.message : "Failed to load the catalog");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -160,6 +159,30 @@ export function HomePage() {
         ) : (
           <div className="empty-state">
             <p className="muted">Aucun film publie pour l'instant.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Communauté</p>
+            <h3>Recommandés par la communauté</h3>
+          </div>
+          <Link className="secondary-link" to="/users">
+            Voir les profils
+          </Link>
+        </div>
+
+        {recommendations.length > 0 ? (
+          <div className="recommendations-grid">
+            {recommendations.map((item) => (
+              <RecommendationCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p className="muted">Aucune recommandation pour le moment.</p>
           </div>
         )}
       </div>

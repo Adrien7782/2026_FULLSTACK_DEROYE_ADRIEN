@@ -4,6 +4,8 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  acceptFollowRequest,
+  refuseFollowRequest,
   type NotificationItem,
 } from "../lib/api";
 
@@ -12,6 +14,10 @@ const TYPE_ICON: Record<string, string> = {
   suggestion_refused: "✕",
   suggestion_processed: "🎬",
   new_episode: "▶",
+  follow_request: "👤",
+  follow_accepted: "✓",
+  new_media: "🎬",
+  new_recommendation: "⭐",
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -19,12 +25,17 @@ const TYPE_COLOR: Record<string, string> = {
   suggestion_refused: "#dc2626",
   suggestion_processed: "#2563eb",
   new_episode: "#7c3aed",
+  follow_request: "#2563eb",
+  follow_accepted: "#059669",
+  new_media: "#7c3aed",
+  new_recommendation: "#d97706",
 };
 
 export function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const load = () => {
     setIsLoading(true);
@@ -44,6 +55,34 @@ export function NotificationsPage() {
   const handleMarkAll = async () => {
     await markAllNotificationsRead().catch(() => {});
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const handleAccept = async (notif: NotificationItem) => {
+    if (!notif.relatedId) return;
+    setActionLoading(notif.id);
+    try {
+      await acceptFollowRequest(notif.relatedId);
+      await markNotificationRead(notif.id).catch(() => {});
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRefuse = async (notif: NotificationItem) => {
+    if (!notif.relatedId) return;
+    setActionLoading(notif.id);
+    try {
+      await refuseFollowRequest(notif.relatedId);
+      await markNotificationRead(notif.id).catch(() => {});
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const unreadCount = items.filter((n) => !n.isRead).length;
@@ -76,21 +115,40 @@ export function NotificationsPage() {
           {items.map((notif) => {
             const icon = TYPE_ICON[notif.type] ?? "•";
             const color = TYPE_COLOR[notif.type] ?? "#6b7280";
-            const content = (
+
+            const notifBody = (
               <div
-                key={notif.id}
                 className={`notif-item${notif.isRead ? "" : " is-unread"}`}
                 onClick={() => { if (!notif.isRead) void handleMarkRead(notif.id); }}
               >
-                <span
-                  className="notif-icon"
-                  style={{ background: `${color}20`, color }}
-                >
+                <span className="notif-icon" style={{ background: `${color}20`, color }}>
                   {icon}
                 </span>
                 <div className="notif-content">
                   <p className="notif-title">{notif.title}</p>
                   {notif.body && <p className="notif-body muted">{notif.body}</p>}
+                  {notif.type === "follow_request" && notif.relatedId && (
+                    <div className="notif-actions" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ padding: "4px 12px", fontSize: "0.8rem" }}
+                        disabled={actionLoading === notif.id}
+                        onClick={() => void handleAccept(notif)}
+                      >
+                        Accepter
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: "4px 12px", fontSize: "0.8rem" }}
+                        disabled={actionLoading === notif.id}
+                        onClick={() => void handleRefuse(notif)}
+                      >
+                        Refuser
+                      </button>
+                    </div>
+                  )}
                   <p className="notif-date muted">
                     {new Date(notif.createdAt).toLocaleDateString("fr-FR", {
                       day: "numeric", month: "long", year: "numeric",
@@ -103,10 +161,10 @@ export function NotificationsPage() {
 
             return notif.link ? (
               <Link key={notif.id} to={notif.link} style={{ textDecoration: "none" }}>
-                {content}
+                {notifBody}
               </Link>
             ) : (
-              <div key={notif.id}>{content}</div>
+              <div key={notif.id}>{notifBody}</div>
             );
           })}
         </div>

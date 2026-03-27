@@ -30,6 +30,8 @@ export type SessionUser = {
   lastName: string | null;
   avatarUrl: string | null;
   isLikesPrivate: boolean;
+  isPublic: boolean;
+  notifyOnNewMedia: boolean;
   role: UserRole;
   createdAt: string;
   updatedAt: string;
@@ -143,6 +145,8 @@ export type UpdateProfileInput = {
   lastName?: string | null;
   avatarUrl?: string | null;
   isLikesPrivate?: boolean;
+  isPublic?: boolean;
+  notifyOnNewMedia?: boolean;
 };
 
 export type ListMediaParams = {
@@ -466,11 +470,83 @@ export type MediaRatingEntry = {
 export const getMediaRatings = (slug: string) =>
   request<{ ratings: MediaRatingEntry[] }>(`/media/${slug}/ratings`, { method: "GET" });
 
+export type FollowStatus = "none" | "pending" | "accepted";
+
+export type PublicUserProfile = {
+  id: string;
+  username: string;
+  avatarUrl: string | null;
+  createdAt: string;
+  isPublic: boolean;
+  followerCount: number;
+  followingCount: number;
+  followStatus: FollowStatus;
+  currentRecommendation: {
+    comment: string;
+    media: { id: string; title: string; slug: string; type: MediaType };
+  } | null;
+  favorites: Array<{ id: string; title: string; slug: string; type: string; posterPath: string | null }> | null;
+};
+
+export type RecommendationItem = {
+  id: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; username: string; avatarUrl: string | null };
+  media: { id: string; title: string; slug: string; type: MediaType; synopsis: string; posterPath: string | null };
+};
+
+export type UserSearchResult = {
+  id: string;
+  username: string;
+  avatarUrl: string | null;
+  isPublic: boolean;
+};
+
 export const getUserPublicProfile = (username: string) =>
-  request<{ user: { id: string; username: string; avatarUrl: string | null; createdAt: string } }>(
-    `/users/by/${username}`,
-    { method: "GET" },
-  );
+  request<{ user: PublicUserProfile }>(`/users/by/${username}`, { method: "GET" });
+
+export const searchUsers = (q: string) =>
+  request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(q)}`, { method: "GET" });
+
+// ─── Social ───────────────────────────────────────────────────────────────────
+
+export const followUser = (userId: string) =>
+  request<{ follow: { id: string; status: string } }>(`/social/follow/${userId}`, { method: "POST" });
+
+export const unfollowUser = (userId: string) =>
+  request<void>(`/social/follow/${userId}`, { method: "DELETE" });
+
+export const getFollowStatus = (userId: string) =>
+  request<{ status: FollowStatus }>(`/social/follow-status/${userId}`, { method: "GET" });
+
+export const listFollowers = () =>
+  request<{ items: UserSearchResult[] }>("/social/followers", { method: "GET" });
+
+export const listFollowing = () =>
+  request<{ items: UserSearchResult[] }>("/social/following", { method: "GET" });
+
+export const acceptFollowRequest = (followId: string) =>
+  request<void>(`/social/follow-requests/${followId}/accept`, { method: "PATCH" });
+
+export const refuseFollowRequest = (followId: string) =>
+  request<void>(`/social/follow-requests/${followId}/refuse`, { method: "PATCH" });
+
+export const listRecommendations = () =>
+  request<{ items: RecommendationItem[] }>("/social/recommendations", { method: "GET" });
+
+export const getMyRecommendation = () =>
+  request<{ recommendation: RecommendationItem | null }>("/social/me/recommendation", { method: "GET" });
+
+export const upsertRecommendation = (mediaId: string, comment: string) =>
+  request<{ recommendation: RecommendationItem }>(`/social/me/recommendation/${mediaId}`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+
+export const deleteRecommendation = () =>
+  request<void>("/social/me/recommendation", { method: "DELETE" });
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 
@@ -809,7 +885,11 @@ export type NotificationType =
   | "suggestion_accepted"
   | "suggestion_refused"
   | "suggestion_processed"
-  | "new_episode";
+  | "new_episode"
+  | "follow_request"
+  | "follow_accepted"
+  | "new_media"
+  | "new_recommendation";
 
 export type NotificationItem = {
   id: string;
@@ -818,6 +898,7 @@ export type NotificationItem = {
   body: string | null;
   isRead: boolean;
   link: string | null;
+  relatedId: string | null;
   createdAt: string;
 };
 

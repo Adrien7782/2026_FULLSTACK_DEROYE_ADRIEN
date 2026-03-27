@@ -10,6 +10,7 @@ import {
   Shield,
   Tv,
   User,
+  Users,
   Video,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
@@ -70,6 +71,9 @@ export function AppLayout() {
             </NavItem>
             <NavItem to="/suggestions" icon={<Plus className="h-4 w-4" />}>
               Suggestions
+            </NavItem>
+            <NavItem to="/users" icon={<Users className="h-4 w-4" />}>
+              Utilisateurs
             </NavItem>
           </nav>
         </aside>

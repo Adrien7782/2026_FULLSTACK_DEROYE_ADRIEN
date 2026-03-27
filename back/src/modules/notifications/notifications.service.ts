@@ -8,9 +8,10 @@ export const createNotification = async (
   title: string,
   body?: string,
   link?: string,
+  relatedId?: string,
 ) => {
   return prisma.notification.create({
-    data: { userId, type, title, body, link },
+    data: { userId, type, title, body, link, relatedId },
   });
 };
 
@@ -20,7 +21,7 @@ export const listNotifications = async (userId: string) => {
     orderBy: { createdAt: "desc" },
     take: 50,
     select: {
-      id: true, type: true, title: true, body: true, isRead: true, link: true, createdAt: true,
+      id: true, type: true, title: true, body: true, isRead: true, link: true, relatedId: true, createdAt: true,
     },
   });
 };

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MediaCard } from "../components/media/MediaCard";
 import { FilmEditPopup } from "../components/upload/FilmEditPopup";
+import { RecommendationPopup } from "../components/social/RecommendationPopup";
 import { useSession } from "../auth/useSession";
 import {
   deleteRating,
@@ -59,6 +60,7 @@ export function FilmDetailPage() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showRecoPopup, setShowRecoPopup] = useState(false);
 
   const [favorited, setFavorited] = useState(false);
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -241,6 +243,9 @@ export function FilmDetailPage() {
               onClick={() => void handleToggleWatchlist()}>
               {inWatchlist ? "✓" : "+"} Ma liste
             </button>
+            <button type="button" className="icon-btn" onClick={() => setShowRecoPopup(true)}>
+              ⭐ Mettre en avant
+            </button>
             <div className="rating-block">
               <StarRating value={userRating} onChange={(v) => void handleRatingChange(v)} />
               {avgRating && avgRating.count > 0 && (
@@ -395,6 +400,15 @@ export function FilmDetailPage() {
           genres={item.genres}
           onClose={() => setShowEditPopup(false)}
           onUpdated={() => setReloadKey((k) => k + 1)}
+        />
+      )}
+
+      {showRecoPopup && (
+        <RecommendationPopup
+          mediaId={item.id}
+          mediaTitle={item.title}
+          onClose={() => setShowRecoPopup(false)}
+          onSuccess={() => {}}
         />
       )}
     </section>

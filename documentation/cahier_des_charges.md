@@ -255,7 +255,14 @@ Pendant l'ajout d'un film, l'utilisateur peut fermer la popup, le traitement con
 
 ## V3
 
+### Fonctionnalités sociales (Phase 8)
 
+* **Profils publics/privés** : Un utilisateur peut rendre son profil public ou privé. Sur un profil public, les autres utilisateurs peuvent voir ses favoris (si non masqués), sa recommandation courante et ses compteurs d'abonnés/abonnements.
+* **Système d'abonnement** : Un utilisateur peut s'abonner à un autre. Si le profil cible est public, l'abonnement est immédiat. Si le profil est privé, une demande de suivi est envoyée (notification de type `follow_request`). Les demandes peuvent être acceptées ou refusées directement depuis la page notifications.
+* **Recherche d'utilisateurs** : Une page dédiée `/users` permet de rechercher des utilisateurs par username.
+* **Recommandation de médias** : Un utilisateur peut mettre en avant un média via un bouton "⭐ Mettre en avant" sur la fiche du média. Il laisse un commentaire. Chaque utilisateur n'a qu'une seule recommandation active à la fois (la nouvelle remplace l'ancienne). Les recommandations s'affichent sur la page d'accueil dans une section "Recommandés par la communauté".
+* **Notifications pour followers** : Lorsqu'un utilisateur met à jour sa recommandation, ses abonnés reçoivent une notification `new_recommendation`.
+* **Notification nouveau média** : Les utilisateurs ayant activé l'option "Me notifier lors d'ajout de médias" (accessible depuis les paramètres du profil) reçoivent une notification `new_media` dès qu'un admin ajoute un nouveau média au catalogue.
 
 ## FUTUR
 
