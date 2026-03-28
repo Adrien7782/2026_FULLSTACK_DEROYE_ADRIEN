@@ -885,6 +885,7 @@ export type NotificationType =
   | "suggestion_accepted"
   | "suggestion_refused"
   | "suggestion_processed"
+  | "new_suggestion"
   | "new_episode"
   | "follow_request"
   | "follow_accepted"

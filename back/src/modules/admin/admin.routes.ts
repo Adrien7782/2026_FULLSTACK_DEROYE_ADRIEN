@@ -17,16 +17,6 @@ import {
   updateSuggestionStatus,
 } from "../suggestions/suggestions.service.js";
 import { createNotification } from "../notifications/notifications.service.js";
-
-const notifyNewMedia = async (mediaTitle: string, mediaType: string, mediaSlug: string) => {
-  const users = await prisma.user.findMany({ where: { notifyOnNewMedia: true }, select: { id: true } });
-  const link = `/${mediaType === "film" ? "films" : "series"}/${mediaSlug}`;
-  await Promise.allSettled(
-    users.map((u) =>
-      createNotification(u.id, "new_media", "Nouveau média disponible", `"${mediaTitle}" a été ajouté au catalogue.`, link),
-    ),
-  );
-};
 import {
   createSeriesBodySchema,
 } from "../series/series.schemas.js";
@@ -39,6 +29,16 @@ import {
   renameEpisode,
   updateSeriesMeta,
 } from "../series/series.service.js";
+
+const notifyNewMedia = async (mediaTitle: string, mediaType: string, mediaSlug: string) => {
+  const users = await prisma.user.findMany({ where: { notifyOnNewMedia: true }, select: { id: true } });
+  const link = `/${mediaType === "film" ? "films" : "series"}/${mediaSlug}`;
+  await Promise.allSettled(
+    users.map((u) =>
+      createNotification(u.id, "new_media", "Nouveau média disponible", `"${mediaTitle}" a été ajouté au catalogue.`, link),
+    ),
+  );
+};
 
 export const adminRouter = Router();
 

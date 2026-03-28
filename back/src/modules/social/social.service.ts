@@ -12,10 +12,11 @@ export const followUser = async (followerId: string, followedId: string) => {
   });
   if (existing) throw new ApiError(409, "Vous suivez déjà cet utilisateur ou une demande est en attente.");
 
-  const followed = await prisma.user.findUnique({ where: { id: followedId }, select: { id: true, username: true, isPublic: true } });
+  const [followed, follower] = await Promise.all([
+    prisma.user.findUnique({ where: { id: followedId }, select: { id: true, username: true, isPublic: true } }),
+    prisma.user.findUnique({ where: { id: followerId }, select: { username: true } }),
+  ]);
   if (!followed) throw new ApiError(404, "Utilisateur introuvable.");
-
-  const follower = await prisma.user.findUnique({ where: { id: followerId }, select: { username: true } });
   if (!follower) throw new ApiError(404, "Utilisateur introuvable.");
 
   if (followed.isPublic) {
@@ -79,14 +80,6 @@ export const listFollowing = async (userId: string) => {
     orderBy: { createdAt: "desc" },
   });
   return follows.map((f) => f.followed);
-};
-
-export const listPendingRequests = async (userId: string) => {
-  return prisma.follow.findMany({
-    where: { followedId: userId, status: "pending" },
-    include: { follower: { select: { id: true, username: true, avatarUrl: true } } },
-    orderBy: { createdAt: "desc" },
-  });
 };
 
 export const acceptFollowRequest = async (followId: string, userId: string) => {

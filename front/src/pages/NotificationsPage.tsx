@@ -13,6 +13,7 @@ const TYPE_ICON: Record<string, string> = {
   suggestion_accepted: "✓",
   suggestion_refused: "✕",
   suggestion_processed: "🎬",
+  new_suggestion: "💡",
   new_episode: "▶",
   follow_request: "👤",
   follow_accepted: "✓",
@@ -24,6 +25,7 @@ const TYPE_COLOR: Record<string, string> = {
   suggestion_accepted: "#059669",
   suggestion_refused: "#dc2626",
   suggestion_processed: "#2563eb",
+  new_suggestion: "#7c3aed",
   new_episode: "#7c3aed",
   follow_request: "#2563eb",
   follow_accepted: "#059669",
@@ -62,8 +64,7 @@ export function NotificationsPage() {
     setActionLoading(notif.id);
     try {
       await acceptFollowRequest(notif.relatedId);
-      await markNotificationRead(notif.id).catch(() => {});
-      load();
+      setItems((prev) => prev.filter((n) => n.id !== notif.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
     } finally {
@@ -76,8 +77,7 @@ export function NotificationsPage() {
     setActionLoading(notif.id);
     try {
       await refuseFollowRequest(notif.relatedId);
-      await markNotificationRead(notif.id).catch(() => {});
-      load();
+      setItems((prev) => prev.filter((n) => n.id !== notif.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
     } finally {

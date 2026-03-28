@@ -27,7 +27,8 @@
       "Bash(grep -rn \"mkdirSync\\\\|mkdir\\\\|posters\\\\|videos\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENbacksrc --include=*.ts)",
       "Bash(grep -rn \"mkdir\\\\|posters\\\\|videos\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENback --include=*.ts --include=*.js -l)",
       "Bash(grep -rn \"setInterval\\\\|setTimeout\\\\|polling\\\\|users/me\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENfrontsrc --include=*.ts --include=*.tsx)",
-      "Bash(grep -rn \"favorites\\\\|watchlist\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENbacksrc --include=*.ts -l)"
+      "Bash(grep -rn \"favorites\\\\|watchlist\" c:UsersadrieDesktopProjetsStreamAdy2026_FULLSTACK_DEROYE_ADRIENbacksrc --include=*.ts -l)",
+      "Bash(grep -r \"acceptFollowRequest\\\\|refuseFollowRequest\" /c/Users/adrie/Desktop/Projets/StreamAdy/2026_FULLSTACK_DEROYE_ADRIEN/back --include=*.ts)"
     ],
     "additionalDirectories": [
       "\\tmp"

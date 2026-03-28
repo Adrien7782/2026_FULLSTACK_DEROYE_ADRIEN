@@ -55,8 +55,12 @@ usersRouter.get("/by/:username", async (req, res, next) => {
         createdAt: true,
         isPublic: true,
         isLikesPrivate: true,
-        followers: { where: { status: "accepted" }, select: { id: true } },
-        following: { where: { status: "accepted" }, select: { id: true } },
+        _count: {
+          select: {
+            followers: { where: { status: "accepted" } },
+            following: { where: { status: "accepted" } },
+          },
+        },
         recommendations: {
           select: {
             comment: true,
@@ -68,8 +72,8 @@ usersRouter.get("/by/:username", async (req, res, next) => {
 
     if (!user) throw new ApiError(404, "Utilisateur introuvable.");
 
-    const followerCount = user.followers.length;
-    const followingCount = user.following.length;
+    const followerCount = user._count.followers;
+    const followingCount = user._count.following;
 
     // Follow status (only if authenticated requester)
     const callerId = req.auth?.user.id ?? null;

@@ -110,34 +110,29 @@ export function HomePage() {
         </div>
       </div>
 
-      {catalog?.spotlight && (
-        <div className="panel spotlight-panel">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">Mis en avant</p>
-              <h3>{catalog.spotlight.title}</h3>
-              <p className="muted">{catalog.spotlight.synopsis}</p>
-            </div>
-
-            <div className="action-row">
-              <Link className="primary-link" to={`/films/${catalog.spotlight.slug}`}>
-                Voir la fiche
-              </Link>
-              <Link className="secondary-link" to="/films">
-                Voir tout le catalogue
-              </Link>
-            </div>
+      <div className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Communauté</p>
+            <h3>Recommandés par la communauté</h3>
           </div>
+          <Link className="secondary-link" to="/users">
+            Voir les profils
+          </Link>
+        </div>
 
-          <div className="chip-row">
-            {catalog.spotlight.genres.map((genre) => (
-              <Link key={genre.id} to={`/films?genre=${genre.slug}`} className="genre-chip is-link">
-                {genre.name}
-              </Link>
+        {recommendations.length > 0 ? (
+          <div className="recommendations-grid">
+            {recommendations.map((item) => (
+              <RecommendationCard key={item.id} item={item} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="empty-state">
+            <p className="muted">Aucune recommandation pour le moment.</p>
+          </div>
+        )}
+      </div>
 
       <div className="panel">
         <div className="section-header">
@@ -163,29 +158,6 @@ export function HomePage() {
         )}
       </div>
 
-      <div className="panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Communauté</p>
-            <h3>Recommandés par la communauté</h3>
-          </div>
-          <Link className="secondary-link" to="/users">
-            Voir les profils
-          </Link>
-        </div>
-
-        {recommendations.length > 0 ? (
-          <div className="recommendations-grid">
-            {recommendations.map((item) => (
-              <RecommendationCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <p className="muted">Aucune recommandation pour le moment.</p>
-          </div>
-        )}
-      </div>
 
       <div className="panel">
         <div className="section-header">

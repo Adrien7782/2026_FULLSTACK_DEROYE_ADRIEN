@@ -6,7 +6,7 @@
 
 ### Remarques
 
-- 
+- L'admin doit recevoir une notification lorsqu'une nouvelle suggestion est postée. 
 
 ### Bugs
 
@@ -14,8 +14,7 @@
 
 ### Nouvelles Fonctionnalités
 
-- Dans le Système de notifications, j'aimerai faire un système d'abonnement entre utilisateur
-
+- 
 ### Questions
 
 - 
