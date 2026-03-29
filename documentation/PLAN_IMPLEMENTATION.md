@@ -361,7 +361,7 @@ Objectifs backend:
 
 - Ajouter `isPublic` et `notifyOnNewMedia` sur `User`.
 - Ajouter `relatedId` sur `Notification`.
-- Ajouter 4 nouvelles valeurs à `NotificationType`: `follow_request`, `follow_accepted`, `new_media`, `new_recommendation`.
+- Ajouter 5 nouvelles valeurs à `NotificationType`: `follow_request`, `follow_accepted`, `new_media`, `new_recommendation`, `new_suggestion`.
 - Créer l'enum `FollowStatus` (`pending`, `accepted`) et le modèle `Follow`.
 - Créer le modèle `MediaRecommendation` (unique par userId).
 - Créer le module `social` avec service + routes (follow, recommendations).
@@ -369,6 +369,7 @@ Objectifs backend:
 - Ajouter `GET /users/search?q=`.
 - Accepter `isPublic` et `notifyOnNewMedia` dans `PATCH /users/me`.
 - Envoyer notification `new_media` après chaque création de média par un admin.
+- Envoyer notification `new_suggestion` à tous les admins lors d'une nouvelle suggestion utilisateur.
 
 Sorties attendues:
 

@@ -2,7 +2,6 @@
 
 Je compte faire une plateforme de streaming privee utilisant comme stack: React (vite) et node.js.
 
-
 ## Fonctionnalites
 
 L'objectif est de faire une plateforme pour visionner mes propres films et series.
@@ -263,6 +262,7 @@ Pendant l'ajout d'un film, l'utilisateur peut fermer la popup, le traitement con
 * **Recommandation de médias** : Un utilisateur peut mettre en avant un média via un bouton "⭐ Mettre en avant" sur la fiche du média. Il laisse un commentaire. Chaque utilisateur n'a qu'une seule recommandation active à la fois (la nouvelle remplace l'ancienne). Les recommandations s'affichent sur la page d'accueil dans une section "Recommandés par la communauté".
 * **Notifications pour followers** : Lorsqu'un utilisateur met à jour sa recommandation, ses abonnés reçoivent une notification `new_recommendation`.
 * **Notification nouveau média** : Les utilisateurs ayant activé l'option "Me notifier lors d'ajout de médias" (accessible depuis les paramètres du profil) reçoivent une notification `new_media` dès qu'un admin ajoute un nouveau média au catalogue.
+* **Notification admin sur nouvelle suggestion** : Lorsqu'un utilisateur soumet une suggestion de média, tous les administrateurs reçoivent une notification `new_suggestion` avec un lien direct vers la page d'administration des suggestions.
 
 ## FUTUR
 

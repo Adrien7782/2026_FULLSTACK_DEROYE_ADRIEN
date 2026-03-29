@@ -2,9 +2,9 @@ export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "StreamAdy API",
-    version: "1.0.0",
+    version: "3.0.0",
     description:
-      "V1 API — authentication, users, media catalog, streaming, interactions (favorites, watchlist, ratings, playback), suggestions workflow and admin management.",
+      "V3 API — authentication, users, media catalog, streaming, interactions (favorites, watchlist, ratings, playback), suggestions workflow, admin management, series & episodes, notifications, and social features (follow, recommendations).",
   },
   servers: [
     {
@@ -17,9 +17,12 @@ export const openApiDocument = {
     { name: "Auth", description: "Registration, login, session rotation and logout." },
     { name: "Users", description: "Authenticated user profile management and public profiles." },
     { name: "Media", description: "Catalog listing, filters, home feed, media detail, streaming and ratings." },
+    { name: "Series", description: "Series detail, episode streaming and playback progress." },
     { name: "Interactions", description: "Favorites, watchlist, ratings, playback progress and history." },
     { name: "Suggestions", description: "Suggestion workflow — users propose films, admins process them." },
-    { name: "Admin", description: "Administration — media CRUD, suggestion management, user role management." },
+    { name: "Notifications", description: "User notifications — list, unread count, mark as read." },
+    { name: "Social", description: "Follow system, public profiles, community media recommendations." },
+    { name: "Admin", description: "Administration — media CRUD, suggestion management, user role management, series import." },
   ],
   components: {
     securitySchemes: {
@@ -48,9 +51,107 @@ export const openApiDocument = {
           lastName: { type: "string", nullable: true },
           avatarUrl: { type: "string", nullable: true },
           isLikesPrivate: { type: "boolean" },
+          isPublic: { type: "boolean" },
+          notifyOnNewMedia: { type: "boolean" },
           role: { type: "string", enum: ["standard", "admin"] },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      FollowStatus: {
+        type: "string",
+        enum: ["none", "pending", "accepted"],
+        description: "Relation de suivi entre l'utilisateur courant et un autre.",
+      },
+      PublicUserProfile: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          username: { type: "string" },
+          avatarUrl: { type: "string", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+          isPublic: { type: "boolean" },
+          followerCount: { type: "integer" },
+          followingCount: { type: "integer" },
+          followStatus: { $ref: "#/components/schemas/FollowStatus" },
+          currentRecommendation: {
+            nullable: true,
+            type: "object",
+            properties: {
+              comment: { type: "string" },
+              media: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  title: { type: "string" },
+                  slug: { type: "string" },
+                  type: { type: "string", enum: ["film", "series"] },
+                },
+              },
+            },
+          },
+          favorites: {
+            nullable: true,
+            type: "array",
+            description: "null if profile is private or isLikesPrivate=true",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                title: { type: "string" },
+                slug: { type: "string" },
+                type: { type: "string" },
+                posterPath: { type: "string", nullable: true },
+              },
+            },
+          },
+        },
+      },
+      NotificationItem: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          type: {
+            type: "string",
+            enum: [
+              "suggestion_accepted", "suggestion_refused", "suggestion_processed",
+              "new_suggestion", "new_episode", "follow_request", "follow_accepted",
+              "new_media", "new_recommendation",
+            ],
+          },
+          title: { type: "string" },
+          body: { type: "string", nullable: true },
+          link: { type: "string", nullable: true },
+          relatedId: { type: "string", nullable: true, description: "Follow.id for follow_request/follow_accepted types" },
+          isRead: { type: "boolean" },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+      RecommendationItem: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          comment: { type: "string" },
+          createdAt: { type: "string", format: "date-time" },
+          user: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              username: { type: "string" },
+              avatarUrl: { type: "string", nullable: true },
+            },
+          },
+          media: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              slug: { type: "string" },
+              type: { type: "string", enum: ["film", "series"] },
+              synopsis: { type: "string" },
+              posterPath: { type: "string", nullable: true },
+            },
+          },
         },
       },
       MediaCard: {
@@ -221,16 +322,40 @@ export const openApiDocument = {
     },
 
     // ── Users ─────────────────────────────────────────────────────────────────
+    "/api/users/search": {
+      get: {
+        tags: ["Users"],
+        summary: "Search users by username (case-insensitive, max 10 results)",
+        security: [],
+        parameters: [
+          { name: "q", in: "query", required: true, schema: { type: "string", minLength: 1, maxLength: 50 } },
+        ],
+        responses: {
+          "200": { description: "Returns { users: [{ id, username, avatarUrl, isPublic }] }" },
+          "400": { description: "Missing or invalid q parameter" },
+        },
+      },
+    },
     "/api/users/by/{username}": {
       get: {
         tags: ["Users"],
-        summary: "Get a public user profile by username",
+        summary: "Get a public user profile by username — includes follower counts, follow status and current recommendation",
         security: [],
         parameters: [
           { name: "username", in: "path", required: true, schema: { type: "string" } },
         ],
         responses: {
-          "200": { description: "Public profile returned (id, username, avatarUrl, createdAt)" },
+          "200": {
+            description: "Public profile returned — see PublicUserProfile schema. favorites is null if profile is private or isLikesPrivate=true.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { user: { $ref: "#/components/schemas/PublicUserProfile" } },
+                },
+              },
+            },
+          },
           "404": { description: "User not found" },
         },
       },
@@ -238,9 +363,9 @@ export const openApiDocument = {
     "/api/users/me": {
       get: {
         tags: ["Users"],
-        summary: "Get the authenticated user profile",
+        summary: "Get the authenticated user profile and current session",
         responses: {
-          "200": { description: "Current user and session returned" },
+          "200": { description: "Returns { user: SessionUser, session }" },
           "401": { description: "Authentication required" },
         },
       },
@@ -260,13 +385,15 @@ export const openApiDocument = {
                   lastName: { type: "string", nullable: true },
                   avatarUrl: { type: "string", nullable: true },
                   isLikesPrivate: { type: "boolean" },
+                  isPublic: { type: "boolean" },
+                  notifyOnNewMedia: { type: "boolean" },
                 },
               },
             },
           },
         },
         responses: {
-          "200": { description: "Profile updated" },
+          "200": { description: "Profile updated — returns { user: SessionUser, session }" },
           "400": { description: "Validation error" },
           "401": { description: "Authentication required" },
           "409": { description: "Username or email already taken" },
@@ -754,12 +881,409 @@ export const openApiDocument = {
     "/api/admin/media/{slug}": {
       delete: {
         tags: ["Admin"],
-        summary: "Delete a media by slug and remove its associated files (admin only)",
+        summary: "Delete a media by slug (admin only — files stay on disk)",
         parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
         responses: {
-          "204": { description: "Media and associated files deleted" },
+          "204": { description: "Media deleted from database" },
           "401": { description: "Authentication required" },
           "403": { description: "Admin role required" },
+          "404": { description: "Media not found" },
+        },
+      },
+      patch: {
+        tags: ["Admin"],
+        summary: "Update film metadata (admin only)",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  synopsis: { type: "string" },
+                  releaseYear: { type: "integer", nullable: true },
+                  status: { type: "string", enum: ["draft", "published", "archived"] },
+                  genreIds: { type: "array", items: { type: "string", format: "uuid" } },
+                  dirPath: { type: "string", nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Film metadata updated" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Media not found" },
+        },
+      },
+    },
+    "/api/admin/films/import-from-dir": {
+      post: {
+        tags: ["Admin"],
+        summary: "Import a film by scanning a local directory (admin only)",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["dirPath", "title", "synopsis"],
+                properties: {
+                  dirPath: { type: "string" },
+                  title: { type: "string" },
+                  synopsis: { type: "string" },
+                  releaseYear: { type: "integer" },
+                  status: { type: "string", enum: ["draft", "published", "archived"] },
+                  genreIds: { type: "array", items: { type: "string", format: "uuid" } },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Film imported — returns { media, scan }" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+    "/api/admin/series/import-from-dir": {
+      post: {
+        tags: ["Admin"],
+        summary: "Import a series by scanning a local directory (admin only)",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["dirPath", "title", "synopsis"],
+                properties: {
+                  dirPath: { type: "string" },
+                  title: { type: "string" },
+                  synopsis: { type: "string" },
+                  releaseYear: { type: "integer" },
+                  status: { type: "string", enum: ["draft", "published", "archived"] },
+                  genreIds: { type: "array", items: { type: "string", format: "uuid" } },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Series imported — returns { serie, scan }" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
+        },
+      },
+    },
+    "/api/admin/series/{slug}/refresh": {
+      post: {
+        tags: ["Admin"],
+        summary: "Refresh a series from its stored directory — adds new seasons/episodes (admin only)",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Series refreshed" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Admin role required" },
+          "404": { description: "Series not found" },
+        },
+      },
+    },
+
+    // ── Series ─────────────────────────────────────────────────────────────────
+    "/api/series/{slug}": {
+      get: {
+        tags: ["Series"],
+        summary: "Get series detail by slug — includes seasons and episodes",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Series detail returned with seasons, episodes and user interactions" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Series not found" },
+        },
+      },
+    },
+    "/api/series/{slug}/resume": {
+      get: {
+        tags: ["Series"],
+        summary: "Get the last watched episode for a series (resume feature)",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Returns { episodeId, positionSeconds } or null if never watched" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/series/episodes/{id}": {
+      get: {
+        tags: ["Series"],
+        summary: "Get episode detail by id",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "200": { description: "Episode detail returned" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Episode not found" },
+        },
+      },
+    },
+    "/api/series/episodes/{id}/stream": {
+      get: {
+        tags: ["Series"],
+        summary: "Stream an episode video with HTTP Range support",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          { name: "Range", in: "header", schema: { type: "string", example: "bytes=0-1048575" } },
+        ],
+        responses: {
+          "200": { description: "Full video returned" },
+          "206": { description: "Partial chunk returned" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Episode or video not found" },
+        },
+      },
+    },
+    "/api/series/episodes/{id}/progress": {
+      get: {
+        tags: ["Series"],
+        summary: "Get playback progress for an episode",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "200": { description: "Returns { positionSeconds, durationSeconds, completed } or null" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        tags: ["Series"],
+        summary: "Save or update playback progress for an episode",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["positionSeconds"],
+                properties: {
+                  positionSeconds: { type: "number", minimum: 0 },
+                  durationSeconds: { type: "number", minimum: 0, nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "204": { description: "Progress saved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+
+    // ── Notifications ──────────────────────────────────────────────────────────
+    "/api/notifications": {
+      get: {
+        tags: ["Notifications"],
+        summary: "List all notifications for the authenticated user",
+        responses: {
+          "200": {
+            description: "Returns { items: NotificationItem[], unreadCount: number }",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    items: { type: "array", items: { $ref: "#/components/schemas/NotificationItem" } },
+                    unreadCount: { type: "integer" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/notifications/unread-count": {
+      get: {
+        tags: ["Notifications"],
+        summary: "Get the number of unread notifications (used for the bell badge)",
+        responses: {
+          "200": { description: "Returns { count: number }" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/notifications/{id}/read": {
+      patch: {
+        tags: ["Notifications"],
+        summary: "Mark a single notification as read",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "204": { description: "Notification marked as read" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Notification not found" },
+        },
+      },
+    },
+    "/api/notifications/read-all": {
+      post: {
+        tags: ["Notifications"],
+        summary: "Mark all notifications as read",
+        responses: {
+          "204": { description: "All notifications marked as read" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+
+    // ── Social ─────────────────────────────────────────────────────────────────
+    "/api/social/recommendations": {
+      get: {
+        tags: ["Social"],
+        summary: "List community recommendations (public — no auth required)",
+        security: [],
+        responses: {
+          "200": {
+            description: "Returns { items: RecommendationItem[] } — max 20, ordered by updatedAt desc",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    items: { type: "array", items: { $ref: "#/components/schemas/RecommendationItem" } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/social/follow/{userId}": {
+      post: {
+        tags: ["Social"],
+        summary: "Follow a user — immediate if public profile, pending request if private",
+        parameters: [{ name: "userId", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "201": { description: "Follow created — returns { follow: { id, status } }" },
+          "400": { description: "Cannot follow yourself" },
+          "401": { description: "Authentication required" },
+          "404": { description: "User not found" },
+          "409": { description: "Already following or request already pending" },
+        },
+      },
+      delete: {
+        tags: ["Social"],
+        summary: "Unfollow a user or cancel a pending follow request",
+        parameters: [{ name: "userId", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "204": { description: "Follow removed" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Follow not found" },
+        },
+      },
+    },
+    "/api/social/follow-status/{userId}": {
+      get: {
+        tags: ["Social"],
+        summary: "Get the follow relationship status between the current user and another",
+        parameters: [{ name: "userId", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "200": { description: "Returns { status: FollowStatus } — 'none' | 'pending' | 'accepted'" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/social/followers": {
+      get: {
+        tags: ["Social"],
+        summary: "List the current user's accepted followers",
+        responses: {
+          "200": { description: "Returns { items: [{ id, username, avatarUrl }] }" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/social/following": {
+      get: {
+        tags: ["Social"],
+        summary: "List the users the current user is following (accepted only)",
+        responses: {
+          "200": { description: "Returns { items: [{ id, username, avatarUrl }] }" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/api/social/follow-requests/{id}/accept": {
+      patch: {
+        tags: ["Social"],
+        summary: "Accept a pending follow request (must be the target user)",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "200": { description: "Follow request accepted — requester receives follow_accepted notification" },
+          "400": { description: "Request is not in pending state" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Not the target of this follow request" },
+          "404": { description: "Follow request not found" },
+        },
+      },
+    },
+    "/api/social/follow-requests/{id}/refuse": {
+      patch: {
+        tags: ["Social"],
+        summary: "Refuse and delete a pending follow request (must be the target user)",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "204": { description: "Follow request refused and deleted" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Not the target of this follow request" },
+          "404": { description: "Follow request not found" },
+        },
+      },
+    },
+    "/api/social/me/recommendation": {
+      get: {
+        tags: ["Social"],
+        summary: "Get the current user's active recommendation",
+        responses: {
+          "200": { description: "Returns { recommendation: RecommendationItem | null }" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      delete: {
+        tags: ["Social"],
+        summary: "Delete the current user's active recommendation",
+        responses: {
+          "204": { description: "Recommendation deleted" },
+          "401": { description: "Authentication required" },
+          "404": { description: "No active recommendation" },
+        },
+      },
+    },
+    "/api/social/me/recommendation/{mediaId}": {
+      post: {
+        tags: ["Social"],
+        summary: "Create or replace the current user's recommendation — notifies accepted followers",
+        parameters: [{ name: "mediaId", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["comment"],
+                properties: { comment: { type: "string", minLength: 1, maxLength: 500 } },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Recommendation saved — returns { recommendation }" },
+          "400": { description: "Validation error" },
+          "401": { description: "Authentication required" },
           "404": { description: "Media not found" },
         },
       },
